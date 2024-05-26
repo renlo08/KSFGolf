@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tournaments.apps.TournamentsConfig',
-    'accounts'
 ]
 
 MIDDLEWARE = [
@@ -53,7 +52,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'app.urls'
 
-LOGIN_URL = '/login/'
+LOGIN_URL = '/accounts/login/'
 
 TEMPLATES = [
     {

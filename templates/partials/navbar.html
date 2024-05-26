@@ -7,20 +7,18 @@
             <a href={% url 'home' %}>Home</a>
         </li>
         {% if request.user.is_authenticated %}
-            <li>Tournaments</li>
+            <li>KSF Golf</li>
+            <li>Tournaments & Results</li>
             <li>
                 <a href="{% url 'accounts:logout' %}">Logout</a>
             </li>
         {% else %}
             <li>
-                <a href="{% url 'accounts:login' %}">Login</a>
-            </li>
-            <li >
-                <a href="{% url 'accounts:register' %}">Register</a>
+                <a href="{% url 'accounts:login' %}">Login/Register</a>
             </li>
         {% endif %}
-    {% if  request.user.is_superuser %}
-        <li>Admin</li>
-    {% endif %}
+        {% if  request.user.is_superuser %}
+            <li>Admin</li>
+        {% endif %}
     </ul>
 </nav>

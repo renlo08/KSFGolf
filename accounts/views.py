@@ -5,7 +5,6 @@ from django.shortcuts import redirect, render
 from app import settings
 
 
-# Create your views here.
 def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)

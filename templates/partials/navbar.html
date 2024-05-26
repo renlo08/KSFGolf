@@ -1,22 +1,26 @@
 {% load static %}
 
-<nav class="text-left text-xl">
+<nav>
 
-        <ul class="grid grid-cols-2 gap-4">
-            {% if user.is_authenticated %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'gardens:list' %}">Gardens</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'accounts:logout' %}">Logout</a>
-                </li>
-            {% else %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'accounts:register' %}">Register</a>
-                </li>
-            {% endif %}
-        </ul>
+    <ul>
+        <li>
+            <a href={% url 'home' %}>Home</a>
+        </li>
+        {% if request.user.is_authenticated %}
+            <li>Tournaments</li>
+            <li>
+                <a href="{% url 'accounts:logout' %}">Logout</a>
+            </li>
+        {% else %}
+            <li>
+                <a href="{% url 'accounts:login' %}">Login</a>
+            </li>
+            <li >
+                <a href="{% url 'accounts:register' %}">Register</a>
+            </li>
+        {% endif %}
+    {% if  request.user.is_superuser %}
+        <li>Admin</li>
+    {% endif %}
+    </ul>
 </nav>

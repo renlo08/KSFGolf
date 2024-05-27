@@ -3,7 +3,6 @@ from django.contrib.auth import get_user
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.http import HttpRequest
 from django.test import RequestFactory, Client
 from django.urls import reverse
 
@@ -117,7 +116,7 @@ def test_logout_user():
     assert user.is_authenticated
 
     # Make a post request to logout
-    response = client.post('/accounts/logout/')
+    client.post('/accounts/logout/')
     user = get_user(client)
     assert not user.is_authenticated
 

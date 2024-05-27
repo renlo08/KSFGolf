@@ -8,7 +8,7 @@
         </li>
         {% if request.user.is_authenticated %}
             <li>KSF Golf</li>
-            <li>Tournaments & Results</li>
+            <li><a href={% url 'tournaments:list' %}>Tournaments & Results</a></li>
             <li>
                 <a href="{% url 'accounts:logout' %}">Logout</a>
             </li>

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section>
+        <a href={% url 'tournaments:create' %}>New tournament</a>
+    </section>
+    <div>
+
+        {% if objects %}
+            {% for object in object_list %}
+                {{ object.as_p }}
+            {% endfor %}
+        {% else %}
+            <section>
+                <h1>No tournaments available</h1>
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

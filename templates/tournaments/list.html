@@ -7,18 +7,17 @@
             <a href={% url 'tournaments:create-course' %}>Add Courses</a>
         </section>
     {% endif %}
-    <div>
-
+    <section>
         {% if object_list %}
+
+            <h1>Tournament calendar {{ current_year }}</h1>
             {% for tournament in object_list %}
                 <p>
-                {{ tournament.course }}: {{ tournament.date}} ; Tee time: {{ tournament.tee_time }}
-                <span><a href={% url 'tournaments:edit-tournament' tournament.slug%}>Edit</a></span></p>
+                    {{ tournament.course }}: {{ tournament.date }} ; Tee time: {{ tournament.tee_time }}
+                    <span><a href={% url 'tournaments:edit-tournament' tournament.slug %}>Edit</a></span></p>
             {% endfor %}
         {% else %}
-            <section>
-                <h1>No tournaments available</h1>
-            </section>
+            <h1>No tournaments available</h1>
         {% endif %}
-    </div>
+    </section>
 {% endblock %}

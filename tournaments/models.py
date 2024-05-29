@@ -17,7 +17,7 @@ class GolfCourse(models.Model):
         ENGLAND: "England",
         FRANCE: "France",
     }
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     contact_person = models.CharField(max_length=100)
     telephone = models.CharField(max_length=100)
@@ -32,7 +32,7 @@ class GolfCourse(models.Model):
 
 
 class Tournament(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
     slug = models.SlugField(unique=True, blank=True, null=True)
     creation_date = models.DateField(auto_now_add=True)
     updated_date = models.DateField(auto_now=True)

@@ -6,7 +6,7 @@ from tournaments.models import Tournament, GolfCourse
 class TournamentForm(forms.ModelForm):
     class Meta:
         model = Tournament
-        fields = '__all__'
+        exclude = ['slug']
 
 
 class GolfCourseForm(forms.ModelForm):

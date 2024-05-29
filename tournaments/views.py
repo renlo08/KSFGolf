@@ -2,9 +2,7 @@ from datetime import datetime
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
 
 from tournaments.forms import TournamentForm, GolfCourseForm
 from tournaments.models import Tournament
@@ -15,7 +13,11 @@ from tournaments.utils import slugify_instance_str
 def list_tournament(request):
     current_year = datetime.now().year
     tournament_qs = Tournament.objects.filter(date__year=current_year).order_by('date')
-    return render(request, 'tournaments/list.html', {'object_list': tournament_qs})
+    context = {
+        'object_list': tournament_qs,
+        'current_year': current_year,
+    }
+    return render(request, 'tournaments/list.html', context)
 
 
 @user_passes_test(lambda usr: usr.is_superuser)
@@ -26,9 +28,6 @@ def create_tournament(request):
     if form.is_valid():
         tournament = form.save(commit=False)
         tournament.slug = slugify_instance_str(tournament, save=True)
-        current_year = datetime.now().year
-        tournament_qs = Tournament.objects.filter(date__year=current_year)
-        # return redirect('tournaments:list', kwargs={'object_list': tournament_qs})
         return redirect('tournaments:list')
     return render(request, 'tournaments/create-update.html', context)
 
@@ -40,10 +39,7 @@ def create_course(request):
     context = {'form': form}
     if form.is_valid():
         form.save()
-        current_year = datetime.now().year
-        tournament_qs = Tournament.objects.filter(date__year=current_year)
-        return HttpResponseRedirect(reverse('tournaments:list', kwargs={'object_list': tournament_qs}))
-        # return redirect('tournaments:list', context={'object_list': tournament_qs})
+        return redirect('tournaments:list')
     return render(request, 'tournaments/create-update.html', context)
 
 

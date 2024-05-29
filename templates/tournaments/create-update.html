@@ -1,10 +1,4 @@
 {% extends "base.html" %}
 {% block content %}
-    <section>
-        <form method="POST">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <input type="submit" value="create">
-        </form>
-    </section>
+    {% include 'tournaments/partials/form.html'%}
 {% endblock %}

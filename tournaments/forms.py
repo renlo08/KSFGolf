@@ -1,9 +1,15 @@
 from django import forms
 
-from tournaments.models import Tournament
+from tournaments.models import Tournament, GolfCourse
 
 
 class TournamentForm(forms.ModelForm):
     class Meta:
         model = Tournament
-        fields = ('date', 'tee_time', 'course', 'supervisor', 'hcp_limit')
+        fields = '__all__'
+
+
+class GolfCourseForm(forms.ModelForm):
+    class Meta:
+        model = GolfCourse
+        fields = '__all__'

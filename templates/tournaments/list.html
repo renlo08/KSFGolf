@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <section>
-        <a href={% url 'tournaments:create' %}>New tournament</a>
-    </section>
+    {% if request.user.is_superuser %}
+        <section>
+            <a href={% url 'tournaments:create-tournament' %}>Add Tournaments</a>
+            <a href={% url 'tournaments:create-course' %}>Add Courses</a>
+        </section>
+    {% endif %}
     <div>
 
-        {% if objects %}
-            {% for object in object_list %}
-                {{ object.as_p }}
+        {% if object_list %}
+            {% for tournament in object_list %}
+                <p>
+                {{ tournament.course }}: {{ tournament.date}} ; Tee time: {{ tournament.tee_time }}
+                <span><a href={% url 'tournaments:edit-tournament' tournament.slug%}>Edit</a></span></p>
             {% endfor %}
         {% else %}
             <section>

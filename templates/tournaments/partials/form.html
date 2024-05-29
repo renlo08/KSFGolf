@@ -1,0 +1,10 @@
+<section>
+    <form action="." method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Add tournament ">
+    </form>
+    {% if message %}
+        {{ message }}
+    {% endif %}
+</section>

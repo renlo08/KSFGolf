@@ -57,3 +57,12 @@ def edit_tournament(request, slug=None):
     # if request.htmx:
     #     return render(request, "recipes/partials/forms.html", context)
     return render(request, "tournaments/create-update.html", context)
+
+
+@user_passes_test(lambda usr: usr.is_superuser)
+@staff_member_required
+def delete_tournaments(request):
+    if request.method == 'POST':
+        qs = Tournament.objects.filter(pk__in=request.POST.getlist('delete-checkboxes'))
+        qs.delete()
+    return redirect('tournaments:list')

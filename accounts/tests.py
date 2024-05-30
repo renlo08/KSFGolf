@@ -3,11 +3,28 @@ from django.contrib.auth import get_user
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.sessions.middleware import SessionMiddleware
-from django.test import RequestFactory, Client
+from django.test import RequestFactory, Client, TestCase
 from django.urls import reverse
 
 from accounts.views import login_view, register_view
 from app import settings
+
+
+@pytest.fixture
+def valid_user_data():
+    return {
+        'username': 'testuser',
+        'password1': 'password123!',
+        'password2': 'password123!'
+    }
+
+@pytest.fixture
+def invalid_user_data():
+    return {
+        'username': 'testuser',
+        'password1': 'password123!',
+        'password2': 'password987!'
+    }
 
 
 @pytest.mark.django_db
@@ -45,22 +62,6 @@ def test_login_view_get_request():
     assert 'form' in response.context
 
 
-@pytest.fixture
-def valid_user_data():
-    return {
-        'username': 'testuser',
-        'password1': 'password123!',
-        'password2': 'password123!'
-    }
-
-
-@pytest.fixture
-def invalid_user_data():
-    return {
-        'username': 'testuser',
-        'password1': 'password123!',
-        'password2': 'password987!'
-    }
 
 
 @pytest.mark.django_db
@@ -119,7 +120,3 @@ def test_logout_user():
     client.post('/accounts/logout/')
     user = get_user(client)
     assert not user.is_authenticated
-
-
-if __name__ == '__main__':
-    pytest.main()

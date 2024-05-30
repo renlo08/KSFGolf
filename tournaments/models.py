@@ -46,4 +46,4 @@ class Tournament(models.Model):
     comment = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.course}: {self.date};{self.tee_time}"
+        return f"{self.course}: {self.date.strftime('%Y-%m-%d')}"

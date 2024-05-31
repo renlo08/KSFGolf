@@ -1,0 +1,24 @@
+<section>
+    <form action="." method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="reset" value="Reset">
+        <input type="submit" value="{% if form.instance.pk %}Update{% else %}Add Tournament{% endif %}">
+        <input type="button" value="Back" onclick="goBack()">
+    </form>
+    {% if message %}
+        {{ message }}
+    {% endif %}
+    {% if form.errors %}
+        {% for error in form.errors %}
+        	{{ error }}
+        {% endfor %}
+        
+{% endif %}
+</section>
+
+<script>
+    function goBack() {
+        window.location.href = "{% url 'tournaments:list' %}"
+    }
+</script>

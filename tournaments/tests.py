@@ -13,10 +13,20 @@ from tournaments import views
 from tournaments.models import Tournament, GolfCourse
 import datetime
 
+from tournaments.utils import slugify_instance_str
 
-class TestListTournament(TestCase):
+
+class ViewsTestCase(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
+        self.superuser = User.objects.create_superuser(username='sup-usr', password='test-superuser')
+        self.superuser.is_staff = True
+        self.superuser.save()
+
+
+class TestListTournament(ViewsTestCase):
+    def setUp(self):
+        super().setUp()
         self.golf_course = GolfCourse.objects.create(name='Test golf course', zip_code=70686)
 
     def test_list_tournament_authenticated(self):
@@ -93,12 +103,9 @@ class TestListTournament(TestCase):
         assert len(response.context['object_list']) == 2  # only the tournament of the current year
 
 
-class TestCreateTournament(TestCase):
+class TestCreateTournament(ViewsTestCase):
     def setUp(self):
-        self.factory = RequestFactory()
-        self.superuser = User.objects.create_superuser(username='sup-usr', password='test-superuser')
-        self.superuser.is_staff = True
-        self.superuser.save()
+        super().setUp()
         self.golf_course = GolfCourse.objects.create(name='Test golf course', zip_code=70686)
 
     @pytest.mark.django_db
@@ -169,6 +176,9 @@ class TestCreateTournament(TestCase):
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/admin/login/?next=/tournaments/create-tournament/'
 
+
+class TestCreateCourse(ViewsTestCase):
+
     @pytest.mark.django_db
     def test_create_course_success(self):
         self.client.login(username='sup-usr', password='test-superuser')
@@ -186,8 +196,8 @@ class TestCreateTournament(TestCase):
         assert response.url == reverse('tournaments:list')
 
         qs = GolfCourse.objects.all()
-        assert qs.count() == 2
-        course = qs.last()
+        assert qs.count() == 1
+        course = qs.first()
         assert str(course) == 'Dummy Golf Country Club'
         assert course.country == 'DE'
 
@@ -289,5 +299,69 @@ class TestCreateTournament(TestCase):
         assert response.url == '/admin/login/?next=/tournaments/create-course/'
 
 
+class TestEditTournament(ViewsTestCase):
 
-# TODO create test of edit tournament, delete tournaments, create course
+    def setUp(self):
+        super().setUp()
+        current_year = datetime.datetime.now().year
+        self.golf_course = GolfCourse.objects.create(
+            name="Dummy Golf Country Club",
+            contact_person='John Doe',
+            email='john.doe@dummy-golf-gc.com',
+            address='dummy road 100',
+            city="Dummy City",
+            zip_code=70806,
+            telephone='+4915150696384',
+            country='DE')
+        self.tournament = Tournament.objects.create(
+            date=datetime.datetime(current_year, 1, 1),
+            tee_time=datetime.time(8, 0),
+            course=self.golf_course,
+            hcp_limit=34.0
+        )
+        slugify_instance_str(self.tournament, save=True)
+
+    def test_edit_tournament(self):
+        self.client.login(username='sup-usr', password='test-superuser')
+        current_year = datetime.datetime.now().year
+        url = reverse('tournaments:edit-tournament', args=[self.tournament.slug])
+        response = self.client.post(url, data={
+            'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
+            'tee_time': datetime.time(9, 0),
+            'course': GolfCourse.objects.first().id,
+            'hcp_limit': 34.0}
+                                    )
+
+        assert response.status_code == HTTPStatus.OK
+        assert 'message' in response.context
+        assert 'Tournament updated successfully' == response.context['message']
+
+    def test_edit_tournament_invalid_field(self):
+        self.client.login(username='sup-usr', password='test-superuser')
+        current_year = datetime.datetime.now().year
+        url = reverse('tournaments:edit-tournament', args=[self.tournament.slug])
+        response = self.client.post(url, data={
+            'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
+            'tee_time': datetime.time(9, 0),
+            'course': GolfCourse.objects.first().id,
+            'hcp_limit': 72.0})
+
+        assert response.status_code == HTTPStatus.OK
+        templates = [template.name for template in response.templates]
+        assert 'tournaments/create-update.html' in templates
+        assert 'form' in response.context
+
+    def test_edit_tournament_invalid_slug(self):
+        self.client.login(username='sup-usr', password='test-superuser')
+        current_year = datetime.datetime.now().year
+        url = reverse('tournaments:edit-tournament', args=['invalid-tournament-slug'])
+        response = self.client.post(url, data={
+            'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
+            'tee_time': datetime.time(9, 0),
+            'course': GolfCourse.objects.first().id,
+            'hcp_limit': 72.0})
+
+        assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+# TODO create test of delete tournaments

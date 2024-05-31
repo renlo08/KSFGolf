@@ -9,6 +9,12 @@
     {% if message %}
         {{ message }}
     {% endif %}
+    {% if form.errors %}
+        {% for error in form.errors %}
+        	{{ error }}
+        {% endfor %}
+        
+{% endif %}
 </section>
 
 <script>

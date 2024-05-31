@@ -4,12 +4,10 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth import get_user
 from django.test import RequestFactory, TestCase, Client
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 
-from app import settings
-from tournaments import views
 from tournaments.models import Tournament, GolfCourse
 import datetime
 
@@ -112,7 +110,7 @@ class TestCreateTournament(ViewsTestCase):
     def test_create_tournament_success(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
@@ -130,7 +128,7 @@ class TestCreateTournament(ViewsTestCase):
     def test_create_tournament_fail(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
@@ -151,7 +149,7 @@ class TestCreateTournament(ViewsTestCase):
         assert user.is_superuser is False
         assert user.is_staff is True
 
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': timezone.now().strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
@@ -167,7 +165,7 @@ class TestCreateTournament(ViewsTestCase):
         self.superuser.save()
         self.client.login(username='sup-usr', password='test-superuser')
 
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': timezone.now().strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
@@ -324,7 +322,7 @@ class TestEditTournament(ViewsTestCase):
     def test_edit_tournament(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        url = reverse('tournaments:edit-tournament', args=[self.tournament.slug])
+        url = self.tournament.get_edit_url()
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
@@ -339,7 +337,7 @@ class TestEditTournament(ViewsTestCase):
     def test_edit_tournament_invalid_field(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        url = reverse('tournaments:edit-tournament', args=[self.tournament.slug])
+        url = self.tournament.get_edit_url()
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
@@ -354,7 +352,7 @@ class TestEditTournament(ViewsTestCase):
     def test_edit_tournament_invalid_slug(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        url = reverse('tournaments:edit-tournament', args=['invalid-tournament-slug'])
+        url = reverse('tournaments:edit', args=['invalid-tournament-slug'])
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
@@ -385,7 +383,7 @@ class TestDeleteTournament(ViewsTestCase):
         self.tournament4 = Tournament.objects.create(hcp_limit=15.0, **common_data)
 
     def test_delete_with_unique_tournament_selected(self):
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
 
         # tournament 1 has been deleted.
@@ -396,7 +394,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
     def test_delete_multiple_tournament_selected(self):
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id, self.tournament2.id]})
 
         # Both tournament has been deleted.
@@ -407,7 +405,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
     def test_delete_without_tournament_selected(self):
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={})
         self.assertEqual(response.status_code, 302)  # HTTPStatus.FOUND
         # No tournament should be deleted
@@ -425,7 +423,7 @@ class TestDeleteTournament(ViewsTestCase):
 
         self.client.login(username='staff', password='test-staff')
 
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
         assert response.status_code == HTTPStatus.FOUND
 
@@ -437,9 +435,39 @@ class TestDeleteTournament(ViewsTestCase):
         self.superuser.is_staff = False
         self.superuser.save()
 
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
 
         assert response.status_code == HTTPStatus.FOUND
         # The tournament should not be deleted
         assert Tournament.objects.filter(id=self.tournament1.id).exists()
+
+
+class TestTournamentDetail(ViewsTestCase):
+
+    def test_show_tournament_overview(self):
+        self.fail()
+
+    def test_show_tournament_overview_fail_login_required(self):
+        self.fail()
+
+    def test_show_registered_participants(self):
+        self.fail()
+
+    def test_show_tournament_participants_fail_staff_permission_required(self):
+        self.fail()
+
+    def test_show_tournament_participants_fail_login_required(self):
+        self.fail()
+
+    def test_register_to_tournament(self):
+        self.fail()
+
+    def test_register_to_tournament_fail_login_required(self):
+        self.fail()
+
+    def test_revoke_tournament_participation(self):
+        self.fail()
+
+    def test_revoke_tournament_participation_fail_login_required(self):
+        self.fail()

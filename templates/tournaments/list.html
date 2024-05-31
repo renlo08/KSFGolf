@@ -3,13 +3,13 @@
 {% block content %}
     {% if request.user.is_superuser %}
         <section>
-            <a href={% url 'tournaments:create-tournament' %}>Add Tournaments</a>
+            <a href={% url 'tournaments:create' %}>Add Tournaments</a>
             <a href={% url 'tournaments:create-course' %}>Add Courses</a>
         </section>
     {% endif %}
     <section>
         {% if object_list %}
-            <form id="delete-form" action="{% url 'tournaments:delete-tournaments' %}" method="post">
+            <form id="delete-form" action="{% url 'tournaments:delete' %}" method="post">
                 {% csrf_token %}
                 <input id="delete-button" type="submit" value="Delete selection">
 
@@ -21,9 +21,10 @@
                         </label>
                         <span>
                     {{ tournament.course }}: {{ tournament.date }} ; Tee time: {{ tournament.tee_time }}
-                    <span><a href={% url 'tournaments:edit-tournament' tournament.slug %}>Edit</a></span></span>
+                    <span><a href={{ tournament.get_edit_url }}>Edit</a></span>
+                    <span><a href={{ tournament.get_absolute_url }}>View</a></span></span>
                     </p>
-                {% endfor %}
+                {% endfor %}    
             </form>
 
         {% else %}

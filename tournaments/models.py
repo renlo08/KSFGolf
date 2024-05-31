@@ -3,6 +3,7 @@ import datetime
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
@@ -47,3 +48,9 @@ class Tournament(models.Model):
 
     def __str__(self):
         return f"{self.course}: {self.date.strftime('%Y-%m-%d')}"
+
+    def get_absolute_url(self):
+        return reverse("tournaments:details", kwargs={"slug": self.slug})
+
+    def get_edit_url(self):
+        return reverse("tournaments:edit", kwargs={"slug": self.slug})

@@ -67,3 +67,9 @@ def delete_tournaments(request):
         qs = Tournament.objects.filter(pk__in=tournament_ids)
         qs.delete()
     return redirect('tournaments:list')
+
+
+@login_required
+def tournament_details_view(request, slug: str):
+    qs = get_object_or_404(Tournament, slug=slug)
+    return render(request, "tournaments/details.html", context={"object": qs})

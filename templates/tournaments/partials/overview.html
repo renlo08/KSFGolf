@@ -1,0 +1,35 @@
+{% block detail-content %}
+    <section>
+
+        <h1>Informations</h1>
+        {#    L´idée sera de justifier chaque div pour les répartir sur l´axe horizontal de manière à former un tableau#}
+        <div>
+            <p>Date: <span>{{ object.date }}</span></p>
+            <p>Allowed handicap: <span><= {{ object.hcp }}</span></p>
+            <p>Tournament supervisor: <span>{{ object.supervisor }}</span></p>
+        </div>
+        <div>
+
+            <p>First Tee: <span>{{ object.tee_time }}</span></p>
+            <p>Relevant for handicap: <span>{% if tournament.hcp_relevant %}Yes{% else %}No{% endif %}</span></p>
+        </div>
+    </section>
+    <section>
+
+        <h1>Golf course</h1>
+        {#    L´idée sera de justifier chaque div pour les répartir sur l´axe horizontal de manière à former un tableau#}
+        <div>
+            <p>Date: <span>{{ object.date }}</span></p>
+            <p>Allowed handicap: <span><= {{ object.hcp }}</span></p>
+            <p>Tournament supervisor: <span>{{ object.supervisor }}</span></p>
+        </div>
+        <div>
+
+            <p>First Tee: <span>{{ object.tee_time }}</span></p>
+            <p>Relevant for handicap: <span>{% if tournament.hcp_relevant %}Yes{% else %}No{% endif %}</span></p>
+        </div>
+    </section>
+
+    <div></div>
+    <div></div>
+{% endblock %}

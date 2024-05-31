@@ -364,4 +364,82 @@ class TestEditTournament(ViewsTestCase):
         assert response.status_code == HTTPStatus.NOT_FOUND
 
 
-# TODO create test of delete tournaments
+class TestDeleteTournament(ViewsTestCase):
+    def setUp(self):
+        super().setUp()
+
+        # Log in the superuser
+        self.client.login(username='sup-usr', password='test-superuser')
+
+        # Create a dummy golf course
+        self.golf_course = GolfCourse.objects.create(name='Test golf course', zip_code=70686)
+        # Create some dummy tournaments for testing
+        current_year = datetime.datetime.now().year
+        common_data = {'date': timezone.now().strftime('%Y-%m-%d'),
+                       'tee_time': datetime.time(8, 0),
+                       'course': self.golf_course}
+
+        self.tournament1 = Tournament.objects.create(hcp_limit=12.0, **common_data)
+        self.tournament2 = Tournament.objects.create(hcp_limit=13.0, **common_data)
+        self.tournament3 = Tournament.objects.create(hcp_limit=14.0, **common_data)
+        self.tournament4 = Tournament.objects.create(hcp_limit=15.0, **common_data)
+
+    def test_delete_with_unique_tournament_selected(self):
+        response = self.client.post(reverse('tournaments:delete-tournaments'),
+                                    data={'delete-checkboxes': [self.tournament1.id]})
+
+        # tournament 1 has been deleted.
+        assert response.status_code == HTTPStatus.FOUND
+        assert not Tournament.objects.filter(id=self.tournament1.id).exists()
+        assert Tournament.objects.filter(id=self.tournament2.id).exists()
+        assert Tournament.objects.filter(id=self.tournament3.id).exists()
+        assert Tournament.objects.filter(id=self.tournament4.id).exists()
+
+    def test_delete_multiple_tournament_selected(self):
+        response = self.client.post(reverse('tournaments:delete-tournaments'),
+                                    data={'delete-checkboxes': [self.tournament1.id, self.tournament2.id]})
+
+        # Both tournament has been deleted.
+        assert response.status_code == HTTPStatus.FOUND
+        assert not Tournament.objects.filter(id=self.tournament1.id).exists()
+        assert not Tournament.objects.filter(id=self.tournament2.id).exists()
+        assert Tournament.objects.filter(id=self.tournament3.id).exists()
+        assert Tournament.objects.filter(id=self.tournament4.id).exists()
+
+    def test_delete_without_tournament_selected(self):
+        response = self.client.post(reverse('tournaments:delete-tournaments'),
+                                    data={})
+        self.assertEqual(response.status_code, 302)  # HTTPStatus.FOUND
+        # No tournament should be deleted
+        assert response.status_code == HTTPStatus.FOUND
+        assert Tournament.objects.filter(id=self.tournament1.id).exists()
+        assert Tournament.objects.filter(id=self.tournament2.id).exists()
+        assert Tournament.objects.filter(id=self.tournament3.id).exists()
+        assert Tournament.objects.filter(id=self.tournament4.id).exists()
+
+    def test_delete_fail_no_superuser_permission(self):
+        # Create a non-superuser staff member for this test
+        staff_user = User.objects.create_user(username='staff', password='test-staff')
+        staff_user.is_staff = True
+        staff_user.save()
+
+        self.client.login(username='staff', password='test-staff')
+
+        response = self.client.post(reverse('tournaments:delete-tournaments'),
+                                    data={'delete-checkboxes': [self.tournament1.id]})
+        assert response.status_code == HTTPStatus.FOUND
+
+        # The tournament should not be deleted
+        assert Tournament.objects.filter(id=self.tournament1.id).exists()
+
+    def test_delete_fail_no_staff_permission(self):
+        # Revoke staff permission from superuser
+        self.superuser.is_staff = False
+        self.superuser.save()
+
+        response = self.client.post(reverse('tournaments:delete-tournaments'),
+                                    data={'delete-checkboxes': [self.tournament1.id]})
+
+        assert response.status_code == HTTPStatus.FOUND
+        # The tournament should not be deleted
+        assert Tournament.objects.filter(id=self.tournament1.id).exists()

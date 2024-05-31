@@ -63,6 +63,7 @@ def edit_tournament(request, slug=None):
 @staff_member_required
 def delete_tournaments(request):
     if request.method == 'POST':
-        qs = Tournament.objects.filter(pk__in=request.POST.getlist('delete-checkboxes'))
+        tournament_ids = request.POST.getlist('delete-checkboxes')
+        qs = Tournament.objects.filter(pk__in=tournament_ids)
         qs.delete()
     return redirect('tournaments:list')

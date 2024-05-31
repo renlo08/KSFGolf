@@ -115,9 +115,9 @@ class TestCreateTournament(TestCase):
         assert response.url == reverse('tournaments:list')
 
         qs = Tournament.objects.all()
+        assert qs.count() == 1
         tournament = qs.first()
         assert tournament.slug == 'test-golf-course-2024-01-01'
-        assert len(qs) == 1
 
     @pytest.mark.django_db
     def test_create_tournament_fail(self):
@@ -168,6 +168,126 @@ class TestCreateTournament(TestCase):
                                     )
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/admin/login/?next=/tournaments/create-tournament/'
+
+    @pytest.mark.django_db
+    def test_create_course_success(self):
+        self.client.login(username='sup-usr', password='test-superuser')
+        response = self.client.post(reverse('tournaments:create-course'),
+                                    data={'name': "Dummy Golf Country Club",
+                                          'contact_person': 'John Doe',
+                                          'email': 'john.doe@dummy-golf-gc.com',
+                                          'address': 'dummy road 100',
+                                          'city': "Dummy City",
+                                          'zip_code': 70806,
+                                          'telephone': '+4915150696384',
+                                          'country': 'DE'
+                                          })
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == reverse('tournaments:list')
+
+        qs = GolfCourse.objects.all()
+        assert qs.count() == 2
+        course = qs.last()
+        assert str(course) == 'Dummy Golf Country Club'
+        assert course.country == 'DE'
+
+    @pytest.mark.django_db
+    def test_create_course_fail_required_field(self):
+        self.client.login(username='sup-usr', password='test-superuser')
+        response = self.client.post(reverse('tournaments:create-course'),
+                                    data={'name': "Dummy Golf Country Club",
+                                          'contact_person': 'John Doe',
+                                          'email': 'john.doe@dummy-golf-gc.com',
+                                          'address': 'dummy road 100',
+                                          'city': "Dummy City",
+                                          'telephone': '+4915150696384',
+                                          'country': 'DE'
+                                          })
+        assert response.status_code == HTTPStatus.OK
+
+        assert len(Tournament.objects.all()) == 0
+        assert 'form' in response.context
+        assert ['This field is required.'] == response.context['form'].errors.get('zip_code')
+
+    @pytest.mark.django_db
+    def test_create_course_fail_invalid_zip_code(self):
+        self.client.login(username='sup-usr', password='test-superuser')
+        response = self.client.post(reverse('tournaments:create-course'),
+                                    data={'name': "Dummy Golf Country Club",
+                                          'contact_person': 'John Doe',
+                                          'email': 'john.doe@dummy-golf-gc.com',
+                                          'address': 'dummy road 100',
+                                          'city': "Dummy City",
+                                          'telephone': '+4915150696384',
+                                          'zip_code': 1_111_111_111_111,
+                                          'country': 'DE'
+                                          })
+        assert response.status_code == HTTPStatus.OK
+
+        assert len(Tournament.objects.all()) == 0
+        assert 'form' in response.context
+        assert ['Ensure this value is less than or equal to 99999.'] == response.context['form'].errors.get('zip_code')
+
+        response = self.client.post(reverse('tournaments:create-course'),
+                                    data={'name': "Dummy Golf Country Club",
+                                          'contact_person': 'John Doe',
+                                          'email': 'john.doe@dummy-golf-gc.com',
+                                          'address': 'dummy road 100',
+                                          'city': "Dummy City",
+                                          'telephone': '+4915150696384',
+                                          'zip_code': -1_111_111_111_111,
+                                          'country': 'DE'
+                                          })
+        assert response.status_code == HTTPStatus.OK
+
+        assert len(Tournament.objects.all()) == 0
+        assert 'form' in response.context
+        assert ['Ensure this value is greater than or equal to 0.'] == response.context['form'].errors.get('zip_code')
+
+    @pytest.mark.django_db
+    def test_create_course_without_superuser_permission(self):
+        staff_usr = User.objects.create_user(username='staff_usr', password='staff')
+        staff_usr.is_staff = True
+        staff_usr.save()
+        self.client.login(username='staff_usr', password='staff')
+        user = get_user(self.client)
+        assert user.is_superuser is False
+        assert user.is_staff is True
+
+        response = self.client.post(reverse('tournaments:create-course'),
+                                    data={'name': "Dummy Golf Country Club",
+                                          'contact_person': 'John Doe',
+                                          'email': 'john.doe@dummy-golf-gc.com',
+                                          'address': 'dummy road 100',
+                                          'city': "Dummy City",
+                                          'zip_code': 70806,
+                                          'telephone': '+4915150696384',
+                                          'country': 'DE'
+                                          })
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/tournaments/create-course/'
+
+    @pytest.mark.django_db
+    def test_create_tournament_without_staff_permission(self):
+        # revoke staff permission to superuser
+        self.superuser.is_staff = False
+        self.superuser.save()
+        self.client.login(username='sup-usr', password='test-superuser')
+
+        response = self.client.post(reverse('tournaments:create-course'),
+                                    data={'name': "Dummy Golf Country Club",
+                                          'contact_person': 'John Doe',
+                                          'email': 'john.doe@dummy-golf-gc.com',
+                                          'address': 'dummy road 100',
+                                          'city': "Dummy City",
+                                          'zip_code': 70806,
+                                          'telephone': '+4915150696384',
+                                          'country': 'DE'
+                                          })
+
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/admin/login/?next=/tournaments/create-course/'
+
 
 
 # TODO create test of edit tournament, delete tournaments, create course

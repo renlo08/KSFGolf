@@ -12,11 +12,11 @@ class GolfCourse(models.Model):
     GERMANY = "DE"
     ENGLAND = "EN"
     FRANCE = "FR"
-    COUNTRY_CHOICES = {
-        GERMANY: "Germany",
-        ENGLAND: "England",
-        FRANCE: "France",
-    }
+    COUNTRY_CHOICES = [
+        (GERMANY, "Germany"),
+        (ENGLAND, "England"),
+        (FRANCE, "France"),
+    ]
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     contact_person = models.CharField(max_length=100)

@@ -70,6 +70,8 @@ def delete_tournaments(request):
 
 
 @login_required
-def tournament_details_view(request, slug: str):
-    qs = get_object_or_404(Tournament, slug=slug)
-    return render(request, "tournaments/details.html", context={"object": qs})
+def get_tournament_detail(request, slug, detail_page):
+    # construct the template path
+    template_name = f'tournaments/partials/{detail_page}.html'
+    tournament = get_object_or_404(Tournament, slug=slug)
+    return render(request, 'tournaments/details.html', context={'detail_template': template_name,"object": tournament})

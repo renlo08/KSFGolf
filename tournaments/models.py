@@ -50,7 +50,10 @@ class Tournament(models.Model):
         return f"{self.course}: {self.date.strftime('%Y-%m-%d')}"
 
     def get_absolute_url(self):
-        return reverse("tournaments:details", kwargs={"slug": self.slug})
+        return reverse("tournaments:detail", kwargs={"slug": self.slug, "detail_page": 'overview'})
 
     def get_edit_url(self):
         return reverse("tournaments:edit", kwargs={"slug": self.slug})
+
+    def back(self):
+        return reverse("tournaments:list")

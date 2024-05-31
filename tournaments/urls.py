@@ -9,6 +9,6 @@ urlpatterns = [
     path('create-tournament/', views.create_tournament, name='create'),
     path('create-course/', views.create_course, name='create-course'),
     path('delete/', views.delete_tournaments, name='delete'),
+    path('<str:slug>/<str:detail_page>', views.get_tournament_detail, name='detail'),
     path('<str:slug>/edit/', views.edit_tournament, name='edit'),
-    path('<str:slug>/', views.tournament_details_view, name='details'),
 ]

@@ -2,11 +2,12 @@
 
 {% block content %}
     <section>
-    <a>Overview</a>
+    <a href={% url 'tournaments:list' %}><- Back to tournament list</a>
+    </section>
+    <section>
+    <a href={% url 'tournaments:detail' object.slug 'overview' %}>Overview</a>
     <a>Participants</a>
     <a>Participate!</a>
     </section>
-    {% block detail-content%}
-    	This will be substituted by the real detail content
-    {% endblock %}
+    {% include detail_template %}
 {% endblock %}

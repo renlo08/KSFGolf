@@ -334,6 +334,26 @@ class TestEditTournament(ViewsTestCase):
         assert 'message' in response.context
         assert 'Tournament updated successfully' == response.context['message']
 
+    def test_edit_tournament_relevant_slug_field(self):
+        another_course = GolfCourse.objects.create(
+            name="Another Dummy Golf Country Club",
+            contact_person='John Doe',
+            email='john.doe@dummy-golf-gc.com',
+            address='dummy road 100',
+            city="Dummy City",
+            zip_code=70806,
+            telephone='+4915150696384',
+            country='DE')
+
+        self.client.login(username='sup-usr', password='test-superuser')
+        url = self.tournament.get_edit_url()
+        response = self.client.post(url, data={'course': another_course.id})
+
+        assert response.status_code == HTTPStatus.OK
+        assert 'message' in response.context
+        assert 'Tournament updated successfully' == response.context['message']
+        assert Tournament.objects.all().first().slug == 'another-dummy-golf-country-club-course-2024-01-01'
+
     def test_edit_tournament_invalid_field(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
@@ -352,7 +372,7 @@ class TestEditTournament(ViewsTestCase):
     def test_edit_tournament_invalid_slug(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        url = reverse('tournaments:edit', args=['invalid-tournament-slug'])
+        url = reverse('tournaments:edit', args=[500_000])
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
@@ -470,7 +490,7 @@ class TestTournamentDetail(ViewsTestCase):
         slugify_instance_str(self.tournament, save=True)
 
     def test_show_tournament_overview(self):
-        response = self.client.get(reverse('tournaments:detail', kwargs={'slug': self.tournament.slug, 'detail_page': 'overview'}))
+        response = self.client.get(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'overview'}))
         assert response.status_code == HTTPStatus.OK
         assert response.context.get('detail_template') == 'tournaments/partials/overview.html'
         assert response.context.get('object') == self.tournament
@@ -479,7 +499,7 @@ class TestTournamentDetail(ViewsTestCase):
     def test_show_tournament_overview_fail_login_required(self):
         # log out the user
         self.client.logout()
-        response = self.client.get(reverse('tournaments:detail', kwargs={'slug': self.tournament.slug, 'detail_page': 'overview'}))
+        response = self.client.get(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'overview'}))
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/tournaments/dummy-golf-country-club-2024-01-01/overview'
 

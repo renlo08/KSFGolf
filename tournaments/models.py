@@ -6,6 +6,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+from tournaments import utils
+
 User = settings.AUTH_USER_MODEL
 
 
@@ -39,7 +41,7 @@ class Tournament(models.Model):
     id = models.AutoField(primary_key=True)
     slug = models.SlugField(unique=True, blank=True, null=True)
     creation_date = models.DateField(auto_now_add=True)
-    updated_date = models.DateField(auto_now=True)
+    updated_date = models.DateTimeField(auto_now=True)
     date = models.DateField(default=timezone.now)
     tee_time = models.TimeField(null=True, blank=True, default=datetime.time(9, 0))
     course = models.ForeignKey(GolfCourse, null=True, blank=True, on_delete=models.CASCADE)
@@ -53,10 +55,13 @@ class Tournament(models.Model):
         return f"{self.course}: {self.date.strftime('%Y-%m-%d')}"
 
     def get_absolute_url(self):
-        return reverse("tournaments:detail", kwargs={"slug": self.slug, "detail_page": 'overview'})
+        return reverse("tournaments:detail", kwargs={"pk": self.pk, "detail_page": 'overview'})
 
     def get_edit_url(self):
-        return reverse("tournaments:edit", kwargs={"slug": self.slug})
+        return reverse("tournaments:edit", kwargs={"pk": self.pk})
 
     def back(self):
         return reverse("tournaments:list")
+
+    def elapsed_time(self):
+        return utils.stringify_time_delta(self.updated_date)

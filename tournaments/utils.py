@@ -1,4 +1,5 @@
 import random
+import datetime
 
 from django.utils.text import slugify
 
@@ -19,3 +20,19 @@ def slugify_instance_str(instance, save=False, new_slug=None):
     if save:
         instance.save()
     return instance
+
+
+def stringify_time_delta(date: datetime.date) -> str:
+    current_time = datetime.datetime.now(tz=datetime.timezone.utc)  # This is timezone-aware
+    time_difference = current_time - date
+
+    if time_difference < datetime.timedelta(minutes=1):
+        return f"less than 1 minute ago."
+    elif time_difference < datetime.timedelta(hours=1):
+        minutes = int(time_difference.total_seconds() / 60)
+        return f"{minutes} minutes ago."
+    elif time_difference < datetime.timedelta(days=1):
+        hours = int(time_difference.total_seconds() // 3600)
+        return f"{hours} hours ago."
+    else:
+        return f"on {date.strftime('%dd.%mm.%YY')}."

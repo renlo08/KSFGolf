@@ -45,14 +45,15 @@ def create_course(request):
 
 @user_passes_test(lambda usr: usr.is_superuser)
 @staff_member_required
-def edit_tournament(request, slug=None):
-    obj = get_object_or_404(Tournament, slug=slug)
+def edit_tournament(request, pk=None):
+    obj = get_object_or_404(Tournament, pk=pk)
     form = TournamentForm(request.POST or None, instance=obj)
     context = {
         "form": form,
     }
     if form.is_valid():
-        form.save()
+        tournament = form.save(commit=False)
+        tournament.slug = slugify_instance_str(tournament, save=True)
         context['message'] = 'Tournament updated successfully'
     # if request.htmx:
     #     return render(request, "recipes/partials/forms.html", context)
@@ -70,12 +71,17 @@ def delete_tournaments(request):
 
 
 @login_required
-def get_tournament_detail(request, slug, detail_page):
+def get_tournament_detail(request, pk, detail_page):
     # construct the template path
     template_name = f'tournaments/partials/{detail_page}.html'
-    tournament = get_object_or_404(Tournament, slug=slug)
+    tournament = get_object_or_404(Tournament, pk=pk)
     course = tournament.course
     return render(request, 'tournaments/details.html',
                   context={'detail_template': template_name,
                            "object": tournament,
                            "course": course})
+
+@login_required
+def add_participant(request, pk):
+    tournament = get_object_or_404(Tournament, pk=pk)
+

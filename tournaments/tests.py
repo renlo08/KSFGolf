@@ -445,11 +445,43 @@ class TestDeleteTournament(ViewsTestCase):
 
 class TestTournamentDetail(ViewsTestCase):
 
+    def setUp(self):
+        super().setUp()
+
+        # Log in the superuser
+        self.client.login(username='sup-usr', password='test-superuser')
+
+        current_year = datetime.datetime.now().year
+        self.golf_course = GolfCourse.objects.create(
+            name="Dummy Golf Country Club",
+            contact_person='John Doe',
+            email='john.doe@dummy-golf-gc.com',
+            address='dummy road 100',
+            city="Dummy City",
+            zip_code=70806,
+            telephone='+4915150696384',
+            country='DE')
+        self.tournament = Tournament.objects.create(
+            date=datetime.datetime(current_year, 1, 1),
+            tee_time=datetime.time(8, 0),
+            course=self.golf_course,
+            hcp_limit=34.0
+        )
+        slugify_instance_str(self.tournament, save=True)
+
     def test_show_tournament_overview(self):
-        self.fail()
+        response = self.client.get(reverse('tournaments:detail', kwargs={'slug': self.tournament.slug, 'detail_page': 'overview'}))
+        assert response.status_code == HTTPStatus.OK
+        assert response.context.get('detail_template') == 'tournaments/partials/overview.html'
+        assert response.context.get('object') == self.tournament
+        assert response.context.get('course') == self.golf_course
 
     def test_show_tournament_overview_fail_login_required(self):
-        self.fail()
+        # log out the user
+        self.client.logout()
+        response = self.client.get(reverse('tournaments:detail', kwargs={'slug': self.tournament.slug, 'detail_page': 'overview'}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/tournaments/dummy-golf-country-club-2024-01-01/overview'
 
     def test_show_registered_participants(self):
         self.fail()

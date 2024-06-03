@@ -2,35 +2,41 @@
     <section>
 
         <h1>Informations</h1>
-        {#    L´idée sera de justifier chaque div pour les répartir sur l´axe horizontal de manière à former un tableau#}
-        <div>
-            <p>Date: <span>{{ object.date }}</span></p>
-            <p>Allowed handicap: <span><= {{ object.hcp_limit }}</span></p>
-            <p>Tournament supervisor: <span>{{ object.supervisor }}</span></p>
-        </div>
-        <div>
-
-            <p>First Tee: <span>{{ object.tee_time }}</span></p>
-            <p>Relevant for handicap: <span>{% if tournament.hcp_relevant %}Yes{% else %}No{% endif %}</span></p>
-            <p>Email: <span>{{ object.supervisor.email }}</span></p>
-        </div>
+        <table>
+            <tr>
+                <td>Date:</td>
+                <td>{{ object.date }}</td>
+                <td>First tee time:</td>
+                <td>{{ object.tee_time }}</td>
+            </tr>
+            <tr>
+                <td>Supervisor:</td>
+                <td>{{ object.supervisor }}</td>
+                <td>Email:</td>
+                <td>{{ object.supervisor.email }}</td>
+            </tr>
+            <tr>
+                <td>Relevant for your handicap:</td>
+                <td>{% if tournament.hcp_relevant %}Yes{% else %}No{% endif %}</td>
+                <td>No Restriction: handicap <=</td>
+                <td>{{ object.hcp_limit }}. {% if object.hcp_limit != 54.0 %}(Higher handicap after discussion with
+                    supervisor.){% endif %}</td>
+            </tr>
+        </table>
     </section>
     <section>
 
         <h1>Golf course</h1>
-        {#    L´idée sera de justifier chaque div pour les répartir sur l´axe horizontal de manière à former un tableau#}
-        <div>
-            <p>Date: <span>{{ object.date }}</span></p>
-            <p>Allowed handicap: <span><= {{ object.hcp }}</span></p>
-            <p>Phone : <span>Current not available</span></p>
-        </div>
-        <div>
-
-            <p>First Tee: <span>{{ object.tee_time }}</span></p>
-            <p>Relevant for handicap: <span>{% if tournament.hcp_relevant %}Yes{% else %}No{% endif %}</span></p>
-        </div>
+        <table>
+            <tr>
+                <td>Name:</td>
+                <td>{{ course.name }}</td>
+            </tr>
+            <tr>
+                <td>Adresse:</td>
+                <td>{{ course.address }}</td>
+                <td>{{ course.get_full_city }}</td>
+            </tr>
+        </table>
     </section>
-
-    <div></div>
-    <div></div>
 {% endblock %}

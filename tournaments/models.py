@@ -31,6 +31,9 @@ class GolfCourse(models.Model):
     def __str__(self):
         return self.name
 
+    def get_full_city(self):
+        return f"{self.country}-{self.zip_code} {self.city}"
+
 
 class Tournament(models.Model):
     id = models.AutoField(primary_key=True)

@@ -3,8 +3,6 @@
 {% block content %}
     <section>
     <a href={% url 'tournaments:list' %}><- Back to tournament list</a>
-    </section>
-    <section>
     <a href={% url 'tournaments:detail' object.slug 'overview' %}>Overview</a>
     <a>Participants</a>
     <a>Participate!</a>

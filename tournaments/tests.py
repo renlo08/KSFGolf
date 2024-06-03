@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.models import UserProfile
 from tournaments.models import Tournament, GolfCourse
 import datetime
 
@@ -17,9 +18,12 @@ from tournaments.utils import slugify_instance_str
 class ViewsTestCase(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-        self.superuser = User.objects.create_superuser(username='sup-usr', password='test-superuser')
+        self.superuser = User.objects.create_superuser(username='sup-usr', password='test-superuser',
+                                                       email='super.user@superuser.com')
         self.superuser.is_staff = True
         self.superuser.save()
+        self.superuser_profile = UserProfile.objects.create(
+            user=self.superuser, first_name='Super', family_name='User', phone_number='+4915150505050', hcp=11.9)
 
 
 class TestListTournament(ViewsTestCase):
@@ -342,17 +346,23 @@ class TestEditTournament(ViewsTestCase):
             address='dummy road 100',
             city="Dummy City",
             zip_code=70806,
-            telephone='+4915150696384',
+            telephone='+4915150505050',
             country='DE')
 
         self.client.login(username='sup-usr', password='test-superuser')
         url = self.tournament.get_edit_url()
-        response = self.client.post(url, data={'course': another_course.id})
+        current_year = datetime.datetime.now().year
+        response = self.client.post(
+            url,
+            data={'course': another_course.id,
+                  'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
+                  'hcp_limit': 34.0})
 
         assert response.status_code == HTTPStatus.OK
-        assert 'message' in response.context
         assert 'Tournament updated successfully' == response.context['message']
-        assert Tournament.objects.all().first().slug == 'another-dummy-golf-country-club-course-2024-01-01'
+        # slug is getting updated (no tournament creation)
+        assert Tournament.objects.count() == 1
+        assert Tournament.objects.first().slug == 'another-dummy-golf-country-club-2024-01-01'
 
     def test_edit_tournament_invalid_field(self):
         self.client.login(username='sup-usr', password='test-superuser')
@@ -369,9 +379,10 @@ class TestEditTournament(ViewsTestCase):
         assert 'tournaments/create-update.html' in templates
         assert 'form' in response.context
 
-    def test_edit_tournament_invalid_slug(self):
+    def test_edit_tournament_fail_invalid_pk(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
+        # request a not existing pk = 500 000
         url = reverse('tournaments:edit', args=[500_000])
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
@@ -501,7 +512,7 @@ class TestTournamentDetail(ViewsTestCase):
         self.client.logout()
         response = self.client.get(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'overview'}))
         assert response.status_code == HTTPStatus.FOUND
-        assert response.url == '/accounts/login/?next=/tournaments/dummy-golf-country-club-2024-01-01/overview'
+        assert response.url == '/accounts/login/?next=/tournaments/1/overview'
 
     def test_show_registered_participants(self):
         self.fail()
@@ -513,10 +524,18 @@ class TestTournamentDetail(ViewsTestCase):
         self.fail()
 
     def test_register_to_tournament(self):
-        self.fail()
+        assert self.tournament.participants.count() == 0
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
+        assert self.tournament.participants.count() == 1
 
     def test_register_to_tournament_fail_login_required(self):
-        self.fail()
+        # log out the user
+        self.client.logout()
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/accounts/1/participate/'
 
     def test_revoke_tournament_participation(self):
         self.fail()

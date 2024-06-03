@@ -4,6 +4,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 
+from accounts.models import UserProfile
 from tournaments.forms import TournamentForm, GolfCourseForm
 from tournaments.models import Tournament
 from tournaments.utils import slugify_instance_str
@@ -53,7 +54,8 @@ def edit_tournament(request, pk=None):
     }
     if form.is_valid():
         tournament = form.save(commit=False)
-        tournament.slug = slugify_instance_str(tournament, save=True)
+        # update the slug
+        slugify_instance_str(tournament, save=True)
         context['message'] = 'Tournament updated successfully'
     # if request.htmx:
     #     return render(request, "recipes/partials/forms.html", context)
@@ -76,12 +78,10 @@ def get_tournament_detail(request, pk, detail_page):
     template_name = f'tournaments/partials/{detail_page}.html'
     tournament = get_object_or_404(Tournament, pk=pk)
     course = tournament.course
+    user = UserProfile.objects.get(user=request.user)
+
     return render(request, 'tournaments/details.html',
                   context={'detail_template': template_name,
                            "object": tournament,
-                           "course": course})
-
-@login_required
-def add_participant(request, pk):
-    tournament = get_object_or_404(Tournament, pk=pk)
-
+                           "course": course,
+                           "is_registered": user.is_registered(tournament.pk)})

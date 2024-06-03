@@ -53,7 +53,15 @@ username = 'lolo'
 email = 'lolofanf1@hotmail.com'
 password = 'qwertzuiopü'
 
-User.objects.create_superuser(username=username, email=email, password=password)
+superuser = User.objects.create_superuser(username=username, email=email, password=password)
+UserProfile.objects.create(
+    user=superuser,
+    first_name='Laurent',
+    family_name='Bihin',
+    phone_number=fake.phone_number(),
+    hcp=11.9
+)
+
 logger.info(f"Creating {NR_INSTANCE} User instance")
 # Generate 100 User instances
 for _ in range(NR_INSTANCE):
@@ -81,8 +89,7 @@ for i in range(NR_INSTANCE):
     UserProfile.objects.create(
         user=user,
         first_name=fake.first_name(),
-        last_name=fake.last_name(),
-        email=fake.email(),
+        family_name=fake.last_name(),
         phone_number=fake.phone_number(),
         hcp=Decimal("%.1f" % uniform(0.0, 54.0))
     )

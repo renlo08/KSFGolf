@@ -6,7 +6,6 @@ from django.urls import reverse
 from django.utils import timezone
 from phonenumber_field import modelfields
 
-from accounts.models import UserProfile
 from tournaments import utils
 
 
@@ -44,13 +43,13 @@ class Tournament(models.Model):
     date = models.DateField(default=timezone.now)
     tee_time = models.TimeField(null=True, blank=True, default=datetime.time(9, 0))
     course = models.ForeignKey(GolfCourse, null=True, blank=True, on_delete=models.CASCADE)
-    supervisor = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True,
+    supervisor = models.ForeignKey('accounts.UserProfile', on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name='supervising_tournament')
     hcp_limit = models.DecimalField(max_digits=3, decimal_places=1, null=False,
                                     validators=[MinValueValidator(0.0), MaxValueValidator(54.0)])
     hcp_relevant = models.BooleanField(default=True)
     comment = models.TextField(blank=True)
-    participants = models.ManyToManyField(UserProfile, blank=True,
+    participants = models.ManyToManyField('accounts.UserProfile', blank=True,
                                           related_name='tournament_participants')
 
     def __str__(self):

@@ -1,58 +1,72 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {% if request.user.is_superuser %}
-        <section>
-        <form method="post">
-        {% csrf_token %}
-        <input value="Add tournament" type="button" onclick="window.location.href='{% url 'tournaments:create' %}'">
-        <input value="Add course" type="button" onclick="window.location.href='{% url 'tournaments:create-course' %}'">
-            {% if object_list %}
-                <input type="submit" value="Delete selection" onclick="this.form.action='{% url 'tournaments:delete' %}';">
-            {% endif %}
+    <section>
+        {% if request.user.is_superuser %}
+            <form method="post">
+            {% csrf_token %}
+            <input value="Add tournament" type="button"
+                   onclick="window.location.href='{% url 'tournaments:create' %}'">
+            <input value="Add course" type="button"
+                   onclick="window.location.href='{% url 'tournaments:create-course' %}'">
+            <input type="submit" value="Delete selection"
+                   onclick="this.form.action='{% url 'tournaments:delete' %}';">
+        {% endif %}
+        {% if object_list %}
+            <div>View:
+                <div>
+                    <a href="{% url 'tournaments:list' %}">All</a>
+                    <a>Upcoming</a>
+                    <a>Past</a>
+                </div>
+            </div>
+            <h1>Tournament calendar {{ current_year }}</h1>
+            <table>
+                <thead>
+                <tr>
+                    {% if request.user.is_superuser %}
+                        <th>Delete</th>
+                    {% endif %}
+                    <th>Course</th>
+                    <th>Date</th>
+                    <th>Tee Time</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for tournament in object_list %}
+                    <tr class="tournament-{{ tournament.id }}">
+                        {% if request.user.is_superuser %}
 
-    <h1>Tournament calendar {{ current_year }}</h1>
-    <table>
-        <thead>
-        <tr>
-            <th>Select</th>
-            <th>Course</th>
-            <th>Date</th>
-            <th>Tee Time</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for tournament in object_list %}
-            <tr class="tournament-{{ tournament.id }}">
-                <td>
-                    <label>
-                        <input type="checkbox" name="delete-checkboxes" class="delete-checkbox"
-                               value="{{ tournament.id }}">
-                    </label>
-                </td>
-                <td>{{ tournament.course }}</td>
-                <td>{{ tournament.date }}</td>
-                <td>{{ tournament.tee_time }}</td>
-                <td>
-                    <details>
-                        <summary>...</summary>
-                        <nav>
-                            <ul>
-                                <li><a href="{{ tournament.get_absolute_url }}">View</a></li>
-                                <li><a href="{{ tournament.get_edit_url }}">Edit</a></li>
-                            </ul>
-                        </nav>
-                    </details>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    </form>
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="delete-checkboxes" class="delete-checkbox"
+                                           value="{{ tournament.id }}">
+                                </label>
+                            </td>
+                        {% endif %}
+                        <td>{{ tournament.course }}</td>
+                        <td>{{ tournament.date }}</td>
+                        <td>{{ tournament.tee_time }}</td>
+                        <td>
+                            <details>
+                                <summary>...</summary>
+                                <nav>
+                                    <ul>
+                                        <li><a href="{{ tournament.get_absolute_url }}">View</a></li>
+                                        <li><a href="{{ tournament.get_edit_url }}">Edit</a></li>
+                                    </ul>
+                                </nav>
+                            </details>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </form>
 
-{% else %}
-    <h1>No tournaments available</h1>
-{% endif %}
-</section>
+        {% else %}
+            <h1>No tournaments available</h1>
+        {% endif %}
+    </section>
 {% endblock %}

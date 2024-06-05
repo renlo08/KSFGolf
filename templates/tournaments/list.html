@@ -16,8 +16,8 @@
             <div>View:
                 <div>
                     <a href="{% url 'tournaments:list' %}">All</a>
-                    <a>Upcoming</a>
-                    <a>Past</a>
+                    <a href="{% url 'tournaments:list' %}?type=upcoming">Upcoming</a>
+                    <a href="{% url 'tournaments:list' %}?type=past">Past</a>
                 </div>
             </div>
             <h1>Tournament calendar {{ current_year }}</h1>

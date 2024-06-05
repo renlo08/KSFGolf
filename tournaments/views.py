@@ -12,8 +12,15 @@ from tournaments.utils import slugify_instance_str
 
 @login_required
 def list_tournament(request):
+    filter_type = request.GET.get('type')
     current_year = datetime.now().year
-    tournament_qs = Tournament.objects.filter(date__year=current_year).order_by('date')
+    if filter_type == 'past':
+        tournament_qs = Tournament.objects.filter(date__lt=datetime.today()).order_by('date')
+    elif filter_type == 'upcoming':
+        tournament_qs = Tournament.objects.filter(date__gte=datetime.today()).order_by('date')
+    else:
+        tournament_qs = Tournament.objects.filter(date__year=current_year).order_by('date')
+        pass
     context = {
         'object_list': tournament_qs,
         'current_year': current_year,

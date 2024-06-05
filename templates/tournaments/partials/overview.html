@@ -2,7 +2,11 @@
     <section>
 
         <p>last update:{{ object.elapsed_time }}</p>
-        <h1>Informations</h1>
+        <form id="edit-form" method="get" action="{{ object.get_edit_url }}">
+            {% csrf_token %}
+            
+        <h1>Informations</h1><span><button type="submit">Edit</button></span>
+        </form>
         <table>
             <tr>
                 <td>Date:</td>

@@ -181,9 +181,12 @@ class TestCreateTournament(ViewsTestCase):
 
 class TestCreateCourse(ViewsTestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.client.login(username='sup-usr', password='test-superuser')
+
     @pytest.mark.django_db
     def test_create_course_success(self):
-        self.client.login(username='sup-usr', password='test-superuser')
         response = self.client.post(reverse('tournaments:create-course'),
                                     data={'name': "Dummy Golf Country Club",
                                           'contact_person': 'John Doe',
@@ -192,7 +195,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'zip_code': 70806,
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external':80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == reverse('tournaments:list')
@@ -205,7 +210,6 @@ class TestCreateCourse(ViewsTestCase):
 
     @pytest.mark.django_db
     def test_create_course_fail_required_field(self):
-        self.client.login(username='sup-usr', password='test-superuser')
         response = self.client.post(reverse('tournaments:create-course'),
                                     data={'name': "Dummy Golf Country Club",
                                           'contact_person': 'John Doe',
@@ -213,7 +217,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'address': 'dummy road 100',
                                           'city': "Dummy City",
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -223,7 +229,6 @@ class TestCreateCourse(ViewsTestCase):
 
     @pytest.mark.django_db
     def test_create_course_fail_invalid_zip_code(self):
-        self.client.login(username='sup-usr', password='test-superuser')
         response = self.client.post(reverse('tournaments:create-course'),
                                     data={'name': "Dummy Golf Country Club",
                                           'contact_person': 'John Doe',
@@ -232,7 +237,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'telephone': '+4915150696384',
                                           'zip_code': 1_111_111_111_111,
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -248,7 +255,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'telephone': '+4915150696384',
                                           'zip_code': -1_111_111_111_111,
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -258,6 +267,7 @@ class TestCreateCourse(ViewsTestCase):
 
     @pytest.mark.django_db
     def test_create_course_without_superuser_permission(self):
+        self.client.logout()
         staff_usr = User.objects.create_user(username='staff_usr', password='staff')
         staff_usr.is_staff = True
         staff_usr.save()
@@ -274,13 +284,16 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'zip_code': 70806,
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/tournaments/create-course/'
 
     @pytest.mark.django_db
     def test_create_tournament_without_staff_permission(self):
+        self.client.logout()
         # revoke staff permission to superuser
         self.superuser.is_staff = False
         self.superuser.save()
@@ -294,7 +307,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'zip_code': 70806,
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
 
         assert response.status_code == HTTPStatus.FOUND

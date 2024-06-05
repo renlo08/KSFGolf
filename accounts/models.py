@@ -14,6 +14,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     first_name = models.CharField(max_length=100)
     family_name = models.CharField(max_length=100)
+    department = models.CharField(max_length=20)
     phone_number = modelfields.PhoneNumberField()
     hcp = models.DecimalField(max_digits=3, decimal_places=1, null=False,
                               validators=[MinValueValidator(0.0), MaxValueValidator(54.0)])

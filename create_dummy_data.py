@@ -59,7 +59,8 @@ UserProfile.objects.create(
     first_name='Laurent',
     family_name='Bihin',
     phone_number=fake.phone_number(),
-    hcp=11.9
+    hcp=11.9,
+    department=fake.company()
 )
 
 logger.info(f"Creating {NR_INSTANCE} User instance")
@@ -91,7 +92,8 @@ for i in range(NR_INSTANCE):
         first_name=fake.first_name(),
         family_name=fake.last_name(),
         phone_number=fake.phone_number(),
-        hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+        hcp=Decimal("%.1f" % uniform(0.0, 54.0)),
+        department=fake.company()
     )
 
 logger.info("Creating 10 golf courses")

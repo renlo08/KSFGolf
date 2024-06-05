@@ -27,6 +27,8 @@ class GolfCourse(models.Model):
     zip_code = models.IntegerField(validators=[MinValueValidator(00000), MaxValueValidator(99999)])
     city = models.CharField(max_length=100)
     country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, default=GERMANY)
+    greenfee_external = models.DecimalField(max_digits=4, decimal_places=1, default=0)
+    greenfee_member = models.DecimalField(max_digits=4, decimal_places=1, default=0)
 
     def __str__(self):
         return self.name

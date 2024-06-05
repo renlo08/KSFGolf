@@ -2,13 +2,13 @@ import os
 
 import django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
-django.setup()
 
 import logging
 
 from decimal import Decimal
 from random import uniform, choice
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
+django.setup()
 
 from django.contrib.auth.models import User
 from django.utils.text import slugify

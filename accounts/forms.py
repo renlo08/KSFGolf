@@ -8,14 +8,15 @@ from accounts.models import UserProfile
 
 
 class UserRegistrationForm(UserCreationForm):
-    first_name = forms.CharField(max_length=100)
-    family_name = forms.CharField(max_length=100)
-    phone_number = formfields.PhoneNumberField(widget=forms.TextInput(attrs={'placeholder': _('Phone')}))
+    first_name = forms.CharField(max_length=100, required=True)
+    family_name = forms.CharField(max_length=100, required=True)
+    phone_number = formfields.PhoneNumberField(required=True, widget=forms.TextInput(attrs={'placeholder': _('Phone')}))
     hcp = forms.DecimalField(decimal_places=1, max_digits=3)
+    email = forms.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ('username', 'password1', 'password2')
+        fields = ('username', 'password1', 'password2', 'email')
 
     def save(self, commit=True):
         user = super().save(commit=True)

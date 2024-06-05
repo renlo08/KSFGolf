@@ -34,5 +34,8 @@ def stringify_time_delta(date: datetime.date) -> str:
     elif time_difference < datetime.timedelta(days=1):
         hours = int(time_difference.total_seconds() // 3600)
         return f"{hours} hours ago."
+    elif time_difference < datetime.timedelta(days=5):
+        days = int(time_difference.total_seconds() // (3600 * 24))
+        return f"{days} day{'s' if days > 1 else ''} ago."
     else:
-        return f"on {date.strftime('%dd.%mm.%YY')}."
+        return f"on {date.strftime('%d.%m.%Y')}."

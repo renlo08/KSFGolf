@@ -553,7 +553,24 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.url == '/accounts/login/?next=/accounts/1/participate/'
 
     def test_revoke_tournament_participation(self):
-        self.fail()
+        # prepare the test and add the user to the tournament
+        self.tournament.participants.clear()
+        self.tournament.participants.add(self.superuser_profile)
+        assert self.tournament.participants.count() == 1
+
+        # simulate the revokation
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
 
     def test_revoke_tournament_participation_fail_login_required(self):
-        self.fail()
+        # prepare the test and add the user to the tournament
+        self.tournament.participants.clear()
+        self.tournament.participants.add(self.superuser_profile)
+        assert self.tournament.participants.count() == 1
+        self.client.logout()
+
+        # simulate the revokation
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/accounts/1/participate/'

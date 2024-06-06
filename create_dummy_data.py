@@ -6,7 +6,8 @@ import django
 import logging
 
 from decimal import Decimal
-from random import uniform, choice
+from random import uniform, choice, random, randint, sample
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
 django.setup()
 
@@ -118,7 +119,7 @@ logger.info("Creating 50 tournaments")
 
 # Generate 50 tournaments
 for num in range(50):
-    Tournament.objects.create(
+    tournament = Tournament.objects.create(
         slug=slugify(f"tournament-{num + 1}"),
         date=fake.date_time_this_year(before_now=True, after_now=True, tzinfo=None),
         tee_time=fake.time_object(),
@@ -126,5 +127,14 @@ for num in range(50):
         supervisor=choice(all_user_profiles),
         hcp_limit=Decimal("%.1f" % uniform(0.0, 54.0)),
         hcp_relevant=fake.boolean(),
-        comment=fake.text()
-    )
+        comment=fake.text())
+
+
+    # assume `tournament` is the current tournament instance
+    participants_count = randint(0, 30)
+    participants_count = min(participants_count, len(all_user_profiles))
+    participants = sample(list(all_user_profiles), participants_count)
+
+    for participant in participants:
+        tournament.participants.add(participant)
+    tournament.save()

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <section>
+        <a href={% url 'tournaments:list' %}><- Back to tournament list</a>
+        <a href={% url 'tournaments:detail' object.pk 'overview' %}>Overview</a>
+        <a href={% url 'tournaments:detail' object.pk 'participants' %}>Participants</a>
+
+        <form method="POST" action="{% url 'accounts:participate' object.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="link-button" id="usr-status">
+                {% if is_registered %}
+                    <!-- The user is already register to the tournament -->
+                    Cancel my participation to this tournament.
+                {% else %}
+                    <!-- The user is not already register to the tournament -->
+                    Register to this tournament.
+                {% endif %}
+            </button>
+        </form>
+    </section>
+    {% include detail_template %}
+{% endblock %}

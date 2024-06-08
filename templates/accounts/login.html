@@ -8,7 +8,7 @@
                 {{ form.as_p }}
                 <input type="submit" value="Login">
             </form>
-            <p>Need an account? Please <a href="{% url 'accounts:register' %}">register</a></p>
+            <p>Need an account? Please <a href="{% url 'accounts:register' %}">sign-up</a></p>
         </div>
     {% else %}
         <p>You´re already logged in. Would you like to <a href="{% url 'accounts:logout' %}">log out</a>? </p>

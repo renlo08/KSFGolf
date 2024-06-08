@@ -1,29 +1,70 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {% if request.user.is_superuser %}
-        <section>
-            <a href={% url 'tournaments:create-tournament' %}>Add Tournaments</a>
-            <a href={% url 'tournaments:create-course' %}>Add Courses</a>
-        </section>
-    {% endif %}
     <section>
+        {% if request.user.is_superuser %}
+            <form method="post">
+            {% csrf_token %}
+            <input value="Add tournament" type="button"
+                   onclick="window.location.href='{% url 'tournaments:create' %}'">
+            <input value="Add course" type="button"
+                   onclick="window.location.href='{% url 'tournaments:create-course' %}'">
+            <input type="submit" value="Delete selection"
+                   onclick="this.form.action='{% url 'tournaments:delete' %}';">
+        {% endif %}
         {% if object_list %}
-            <form id="delete-form" action="{% url 'tournaments:delete-tournaments' %}" method="post">
-                {% csrf_token %}
-                <input id="delete-button" type="submit" value="Delete selection">
-
-                <h1>Tournament calendar {{ current_year }}</h1>
+            <div>View:
+                <div>
+                    <a href="{% url 'tournaments:list' %}">All</a>
+                    <a href="{% url 'tournaments:list' %}?type=upcoming">Upcoming</a>
+                    <a href="{% url 'tournaments:list' %}?type=past">Past</a>
+                </div>
+            </div>
+            <h1>Tournament calendar {{ current_year }}</h1>
+            <table>
+                <thead>
+                <tr>
+                    {% if request.user.is_superuser %}
+                        <th>Delete</th>
+                    {% endif %}
+                    <th>Course</th>
+                    <th>Date</th>
+                    <th>Tee Time</th>
+                    <th>Participants</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
                 {% for tournament in object_list %}
-                    <p class="tournament-{{ tournament.id }}">
-                        <label>
-                            <input type="checkbox" name="delete-checkboxes" class="delete-checkbox" value="{{ tournament.id }}">
-                        </label>
-                        <span>
-                    {{ tournament.course }}: {{ tournament.date }} ; Tee time: {{ tournament.tee_time }}
-                    <span><a href={% url 'tournaments:edit-tournament' tournament.slug %}>Edit</a></span></span>
-                    </p>
+                    <tr class="tournament-{{ tournament.id }}">
+                        {% if request.user.is_superuser %}
+
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="delete-checkboxes" class="delete-checkbox"
+                                           value="{{ tournament.id }}">
+                                </label>
+                            </td>
+                        {% endif %}
+                        <td>{{ tournament.course }}</td>
+                        <td>{{ tournament.date }}</td>
+                        <td>{{ tournament.tee_time }}</td>
+                        <td>{{ tournament.count_participants }}/{{ tournament.max_participants}}</td>
+                        <td>
+                            <details>
+                                <summary>...</summary>
+                                <nav>
+                                    <ul>
+                                        <li><a href="{{ tournament.get_absolute_url }}">View</a></li>
+                                        <li><a href="{{ tournament.get_edit_url }}">Edit</a></li>
+                                    </ul>
+                                </nav>
+                            </details>
+                        </td>
+                    </tr>
                 {% endfor %}
+                </tbody>
+            </table>
             </form>
 
         {% else %}

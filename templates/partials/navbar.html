@@ -14,7 +14,7 @@
             </li>
         {% else %}
             <li>
-                <a href="{% url 'accounts:login' %}">Login/Register</a>
+                <a href="{% url 'accounts:login' %}">Login/Sign-up</a>
             </li>
         {% endif %}
         {% if  request.user.is_superuser %}

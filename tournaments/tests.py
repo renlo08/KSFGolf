@@ -4,12 +4,11 @@ from unittest.mock import patch
 import pytest
 from django.contrib.auth import get_user
 from django.test import RequestFactory, TestCase, Client
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
 
-from app import settings
-from tournaments import views
+from accounts.models import UserProfile
 from tournaments.models import Tournament, GolfCourse
 import datetime
 
@@ -19,9 +18,12 @@ from tournaments.utils import slugify_instance_str
 class ViewsTestCase(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
-        self.superuser = User.objects.create_superuser(username='sup-usr', password='test-superuser')
+        self.superuser = User.objects.create_superuser(username='sup-usr', password='test-superuser',
+                                                       email='super.user@superuser.com')
         self.superuser.is_staff = True
         self.superuser.save()
+        self.superuser_profile = UserProfile.objects.create(
+            user=self.superuser, first_name='Super', family_name='User', phone_number='+4915150505050', hcp=11.9)
 
 
 class TestListTournament(ViewsTestCase):
@@ -112,12 +114,12 @@ class TestCreateTournament(ViewsTestCase):
     def test_create_tournament_success(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
-                                          'hcp_limit': 34.0}
-                                    )
+                                          'hcp_limit': 34.0,
+                                          'max_participants': 30})
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == reverse('tournaments:list')
 
@@ -130,10 +132,11 @@ class TestCreateTournament(ViewsTestCase):
     def test_create_tournament_fail(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
+                                          'max_participants': 30
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -151,7 +154,7 @@ class TestCreateTournament(ViewsTestCase):
         assert user.is_superuser is False
         assert user.is_staff is True
 
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': timezone.now().strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
@@ -167,7 +170,7 @@ class TestCreateTournament(ViewsTestCase):
         self.superuser.save()
         self.client.login(username='sup-usr', password='test-superuser')
 
-        response = self.client.post(reverse('tournaments:create-tournament'),
+        response = self.client.post(reverse('tournaments:create'),
                                     data={'date': timezone.now().strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
@@ -179,9 +182,12 @@ class TestCreateTournament(ViewsTestCase):
 
 class TestCreateCourse(ViewsTestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.client.login(username='sup-usr', password='test-superuser')
+
     @pytest.mark.django_db
     def test_create_course_success(self):
-        self.client.login(username='sup-usr', password='test-superuser')
         response = self.client.post(reverse('tournaments:create-course'),
                                     data={'name': "Dummy Golf Country Club",
                                           'contact_person': 'John Doe',
@@ -190,7 +196,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'zip_code': 70806,
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external':80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == reverse('tournaments:list')
@@ -203,7 +211,6 @@ class TestCreateCourse(ViewsTestCase):
 
     @pytest.mark.django_db
     def test_create_course_fail_required_field(self):
-        self.client.login(username='sup-usr', password='test-superuser')
         response = self.client.post(reverse('tournaments:create-course'),
                                     data={'name': "Dummy Golf Country Club",
                                           'contact_person': 'John Doe',
@@ -211,7 +218,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'address': 'dummy road 100',
                                           'city': "Dummy City",
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -221,7 +230,6 @@ class TestCreateCourse(ViewsTestCase):
 
     @pytest.mark.django_db
     def test_create_course_fail_invalid_zip_code(self):
-        self.client.login(username='sup-usr', password='test-superuser')
         response = self.client.post(reverse('tournaments:create-course'),
                                     data={'name': "Dummy Golf Country Club",
                                           'contact_person': 'John Doe',
@@ -230,7 +238,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'telephone': '+4915150696384',
                                           'zip_code': 1_111_111_111_111,
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -246,7 +256,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'telephone': '+4915150696384',
                                           'zip_code': -1_111_111_111_111,
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -256,6 +268,7 @@ class TestCreateCourse(ViewsTestCase):
 
     @pytest.mark.django_db
     def test_create_course_without_superuser_permission(self):
+        self.client.logout()
         staff_usr = User.objects.create_user(username='staff_usr', password='staff')
         staff_usr.is_staff = True
         staff_usr.save()
@@ -272,13 +285,16 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'zip_code': 70806,
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/tournaments/create-course/'
 
     @pytest.mark.django_db
     def test_create_tournament_without_staff_permission(self):
+        self.client.logout()
         # revoke staff permission to superuser
         self.superuser.is_staff = False
         self.superuser.save()
@@ -292,7 +308,9 @@ class TestCreateCourse(ViewsTestCase):
                                           'city': "Dummy City",
                                           'zip_code': 70806,
                                           'telephone': '+4915150696384',
-                                          'country': 'DE'
+                                          'country': 'DE',
+                                          'greenfee_external': 80,
+                                          'greenfee_member': 15
                                           })
 
         assert response.status_code == HTTPStatus.FOUND
@@ -324,22 +342,47 @@ class TestEditTournament(ViewsTestCase):
     def test_edit_tournament(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        url = reverse('tournaments:edit-tournament', args=[self.tournament.slug])
+        url = self.tournament.get_edit_url()
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
             'course': GolfCourse.objects.first().id,
-            'hcp_limit': 34.0}
-                                    )
-
+            'hcp_limit': 34.0,
+            'max_participants': 30})
         assert response.status_code == HTTPStatus.OK
         assert 'message' in response.context
         assert 'Tournament updated successfully' == response.context['message']
 
+    def test_edit_tournament_relevant_slug_field(self):
+        another_course = GolfCourse.objects.create(
+            name="Another Dummy Golf Country Club",
+            contact_person='John Doe',
+            email='john.doe@dummy-golf-gc.com',
+            address='dummy road 100',
+            city="Dummy City",
+            zip_code=70806,
+            telephone='+4915150505050',
+            country='DE')
+
+        self.client.login(username='sup-usr', password='test-superuser')
+        url = self.tournament.get_edit_url()
+        current_year = datetime.datetime.now().year
+        response = self.client.post(
+            url,
+            data={'course': another_course.id,
+                  'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
+                  'hcp_limit': 34.0,
+                  'max_participants': 30})
+        assert response.status_code == HTTPStatus.OK
+        assert 'Tournament updated successfully' == response.context['message']
+        # slug is getting updated (no tournament creation)
+        assert Tournament.objects.count() == 1
+        assert Tournament.objects.first().slug == 'another-dummy-golf-country-club-2024-01-01'
+
     def test_edit_tournament_invalid_field(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        url = reverse('tournaments:edit-tournament', args=[self.tournament.slug])
+        url = self.tournament.get_edit_url()
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
@@ -351,10 +394,11 @@ class TestEditTournament(ViewsTestCase):
         assert 'tournaments/create-update.html' in templates
         assert 'form' in response.context
 
-    def test_edit_tournament_invalid_slug(self):
+    def test_edit_tournament_fail_invalid_pk(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
-        url = reverse('tournaments:edit-tournament', args=['invalid-tournament-slug'])
+        # request a not existing pk = 500 000
+        url = reverse('tournaments:edit', args=[500_000])
         response = self.client.post(url, data={
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
@@ -385,7 +429,7 @@ class TestDeleteTournament(ViewsTestCase):
         self.tournament4 = Tournament.objects.create(hcp_limit=15.0, **common_data)
 
     def test_delete_with_unique_tournament_selected(self):
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
 
         # tournament 1 has been deleted.
@@ -396,7 +440,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
     def test_delete_multiple_tournament_selected(self):
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id, self.tournament2.id]})
 
         # Both tournament has been deleted.
@@ -407,7 +451,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
     def test_delete_without_tournament_selected(self):
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={})
         self.assertEqual(response.status_code, 302)  # HTTPStatus.FOUND
         # No tournament should be deleted
@@ -425,7 +469,7 @@ class TestDeleteTournament(ViewsTestCase):
 
         self.client.login(username='staff', password='test-staff')
 
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
         assert response.status_code == HTTPStatus.FOUND
 
@@ -437,9 +481,118 @@ class TestDeleteTournament(ViewsTestCase):
         self.superuser.is_staff = False
         self.superuser.save()
 
-        response = self.client.post(reverse('tournaments:delete-tournaments'),
+        response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
 
         assert response.status_code == HTTPStatus.FOUND
         # The tournament should not be deleted
         assert Tournament.objects.filter(id=self.tournament1.id).exists()
+
+
+class TestTournamentDetail(ViewsTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        # Log in the superuser
+        self.client.login(username='sup-usr', password='test-superuser')
+
+        current_year = datetime.datetime.now().year
+        self.golf_course = GolfCourse.objects.create(
+            name="Dummy Golf Country Club",
+            contact_person='John Doe',
+            email='john.doe@dummy-golf-gc.com',
+            address='dummy road 100',
+            city="Dummy City",
+            zip_code=70806,
+            telephone='+4915150696384',
+            country='DE')
+        self.tournament = Tournament.objects.create(
+            date=datetime.datetime(current_year, 1, 1),
+            tee_time=datetime.time(8, 0),
+            course=self.golf_course,
+            hcp_limit=34.0
+        )
+        slugify_instance_str(self.tournament, save=True)
+
+    def test_show_tournament_overview(self):
+        response = self.client.get(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'overview'}))
+        assert response.status_code == HTTPStatus.OK
+        assert response.context.get('detail_template') == 'tournaments/partials/overview.html'
+        assert response.context.get('object') == self.tournament
+        assert response.context.get('course') == self.golf_course
+        assert not response.context.get('is_registered')
+
+    def test_show_tournament_overview_fail_login_required(self):
+        # log out the user
+        self.client.logout()
+        response = self.client.get(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'overview'}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/tournaments/1/overview'
+
+    def test_show_registered_participants(self):
+        response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
+        assert response.context.get('detail_template') == 'tournaments/partials/participants.html'
+        context_object = response.context
+        assert context_object.get('object') == self.tournament
+        assert context_object.get('course') == self.golf_course
+        assert not context_object.get('is_registered')
+        assert self.superuser_profile not in context_object.get('participants').all()
+
+        # click to register the participation
+        response = self.client.post(reverse('accounts:participate', args=[self.tournament.id]))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
+        assert self.superuser_profile in context_object.get('participants').all()
+
+    def test_show_tournament_participants_fail_staff_permission_required(self):
+        # Revoke staff permission from superuser
+        self.superuser.is_staff = False
+        self.superuser.save()
+
+        response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
+
+    def test_show_tournament_participants_fail_login_required(self):
+        self.client.logout()
+        response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/tournaments/1/participants'
+
+    def test_register_to_tournament(self):
+        assert self.tournament.participants.count() == 0
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
+        assert self.tournament.participants.count() == 1
+
+    def test_register_to_tournament_fail_login_required(self):
+        # log out the user
+        self.client.logout()
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/accounts/1/participate/'
+
+    def test_revoke_tournament_participation(self):
+        # prepare the test and add the user to the tournament
+        self.tournament.participants.clear()
+        self.tournament.participants.add(self.superuser_profile)
+        assert self.tournament.participants.count() == 1
+
+        # simulate the revokation
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
+
+    def test_revoke_tournament_participation_fail_login_required(self):
+        # prepare the test and add the user to the tournament
+        self.tournament.participants.clear()
+        self.tournament.participants.add(self.superuser_profile)
+        assert self.tournament.participants.count() == 1
+        self.client.logout()
+
+        # simulate the revokation
+        response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/accounts/1/participate/'

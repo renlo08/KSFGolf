@@ -4,6 +4,7 @@
         {{ form.as_p }}
         <input type="reset" value="Reset">
         <input type="submit" value="{% if form.instance.pk %}Update{% else %}Add Tournament{% endif %}">
+{#        <input type="button" value="Back" onclick="goBack()">#}
         <input type="button" value="Back" onclick="goBack()">
     </form>
     {% if message %}
@@ -19,6 +20,11 @@
 
 <script>
     function goBack() {
-        window.location.href = "{% url 'tournaments:list' %}"
+        window.location.href = "{% if form.instance.pk %}{{form.instance.get_absolute_url}}{% else %}{% url 'tournaments:list' %}{% endif %}"
     }
 </script>
+{#<script>#}
+{#    function goBack() {#}
+{#        window.location.href = "{% url 'tournaments:list' %}"#}
+{#    }#}
+{#</script>#}

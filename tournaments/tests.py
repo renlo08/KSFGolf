@@ -118,8 +118,8 @@ class TestCreateTournament(ViewsTestCase):
                                     data={'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
-                                          'hcp_limit': 34.0}
-                                    )
+                                          'hcp_limit': 34.0,
+                                          'max_participants': 30})
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == reverse('tournaments:list')
 
@@ -136,6 +136,7 @@ class TestCreateTournament(ViewsTestCase):
                                     data={'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
                                           'tee_time': datetime.time(8, 0),
                                           'course': GolfCourse.objects.first().id,
+                                          'max_participants': 30
                                           })
         assert response.status_code == HTTPStatus.OK
 
@@ -346,9 +347,8 @@ class TestEditTournament(ViewsTestCase):
             'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
             'tee_time': datetime.time(9, 0),
             'course': GolfCourse.objects.first().id,
-            'hcp_limit': 34.0}
-                                    )
-
+            'hcp_limit': 34.0,
+            'max_participants': 30})
         assert response.status_code == HTTPStatus.OK
         assert 'message' in response.context
         assert 'Tournament updated successfully' == response.context['message']
@@ -371,8 +371,8 @@ class TestEditTournament(ViewsTestCase):
             url,
             data={'course': another_course.id,
                   'date': datetime.datetime(current_year, 1, 1).strftime('%Y-%m-%d'),
-                  'hcp_limit': 34.0})
-
+                  'hcp_limit': 34.0,
+                  'max_participants': 30})
         assert response.status_code == HTTPStatus.OK
         assert 'Tournament updated successfully' == response.context['message']
         # slug is getting updated (no tournament creation)
@@ -521,6 +521,7 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.context.get('detail_template') == 'tournaments/partials/overview.html'
         assert response.context.get('object') == self.tournament
         assert response.context.get('course') == self.golf_course
+        assert not response.context.get('is_registered')
 
     def test_show_tournament_overview_fail_login_required(self):
         # log out the user
@@ -530,13 +531,34 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.url == '/accounts/login/?next=/tournaments/1/overview'
 
     def test_show_registered_participants(self):
-        self.fail()
+        response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
+        assert response.context.get('detail_template') == 'tournaments/partials/participants.html'
+        context_object = response.context
+        assert context_object.get('object') == self.tournament
+        assert context_object.get('course') == self.golf_course
+        assert not context_object.get('is_registered')
+        assert self.superuser_profile not in context_object.get('participants').all()
+
+        # click to register the participation
+        response = self.client.post(reverse('accounts:participate', args=[self.tournament.id]))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
+        assert self.superuser_profile in context_object.get('participants').all()
 
     def test_show_tournament_participants_fail_staff_permission_required(self):
-        self.fail()
+        # Revoke staff permission from superuser
+        self.superuser.is_staff = False
+        self.superuser.save()
+
+        response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/tournaments/1/overview'
 
     def test_show_tournament_participants_fail_login_required(self):
-        self.fail()
+        self.client.logout()
+        response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
+        assert response.status_code == HTTPStatus.FOUND
+        assert response.url == '/accounts/login/?next=/tournaments/1/participants'
 
     def test_register_to_tournament(self):
         assert self.tournament.participants.count() == 0

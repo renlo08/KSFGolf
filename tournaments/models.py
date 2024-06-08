@@ -50,9 +50,13 @@ class Tournament(models.Model):
     hcp_limit = models.DecimalField(max_digits=3, decimal_places=1, null=False,
                                     validators=[MinValueValidator(0.0), MaxValueValidator(54.0)])
     hcp_relevant = models.BooleanField(default=True)
+    max_participants = models.IntegerField(default=30)
     comment = models.TextField(blank=True)
     participants = models.ManyToManyField('accounts.UserProfile', blank=True,
                                           related_name='tournament_participants')
+
+    def count_participants(self):
+        return self.participants.count()
 
     def __str__(self):
         return f"{self.course}: {self.date.strftime('%Y-%m-%d')}"

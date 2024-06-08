@@ -4,7 +4,7 @@
     <section>
         <a href={% url 'tournaments:list' %}><- Back to tournament list</a>
         <a href={% url 'tournaments:detail' object.pk 'overview' %}>Overview</a>
-        <a>Participants</a>
+        <a href={% url 'tournaments:detail' object.pk 'participants' %}>Participants</a>
 
         <form method="POST" action="{% url 'accounts:participate' object.pk %}">
             {% csrf_token %}

@@ -86,9 +86,15 @@ def get_tournament_detail(request, pk, detail_page):
     tournament = get_object_or_404(Tournament, pk=pk)
     course = tournament.course
     user = UserProfile.objects.get(user=request.user)
-
-    return render(request, 'tournaments/details.html',
-                  context={'detail_template': template_name,
-                           "object": tournament,
-                           "course": course,
-                           "is_registered": user.is_registered(tournament.pk)})
+    context = {'detail_template': template_name,
+               "object": tournament,
+               "course": course,
+               "is_registered": user.is_registered(tournament.pk)}
+    if detail_page == 'participants':
+        # only if is staff user
+        if request.user.is_staff:
+            participants = tournament.participants.order_by('hcp')
+            context['participants'] = participants
+        else:
+            return redirect('tournaments:detail', pk=tournament.pk, detail_page='overview')
+    return render(request, 'tournaments/details.html', context)

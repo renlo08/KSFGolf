@@ -30,6 +30,7 @@
                     <th>Course</th>
                     <th>Date</th>
                     <th>Tee Time</th>
+                    <th>Participants</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
@@ -48,6 +49,7 @@
                         <td>{{ tournament.course }}</td>
                         <td>{{ tournament.date }}</td>
                         <td>{{ tournament.tee_time }}</td>
+                        <td>{{ tournament.count_participants }}/{{ tournament.max_participants}}</td>
                         <td>
                             <details>
                                 <summary>...</summary>

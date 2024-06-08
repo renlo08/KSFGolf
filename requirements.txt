@@ -3,3 +3,4 @@ pytest
 pytest-django
 django-phonenumber-field
 faker
+phonenumbers

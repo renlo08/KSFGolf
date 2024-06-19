@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 import django
 
@@ -16,7 +17,7 @@ from django.utils.text import slugify
 from faker import Faker
 
 from accounts.models import UserProfile
-from tournaments.models import Tournament, GolfCourse
+from tournaments.models import Tournament, GolfCourse, Competitor
 
 # creating a logging instance with the name 'MyLogger'
 logger = logging.getLogger('MyLogger')
@@ -136,5 +137,16 @@ for num in range(50):
     participants = sample(list(all_user_profiles), participants_count)
 
     for participant in participants:
-        tournament.participants.add(participant)
-    tournament.save()
+        # generate a random number of days to subtract from the tournament date
+        days_before_tournament = randint(1, 25)
+
+        # calculate the registration_date
+        registration_date = tournament.date - timedelta(days=days_before_tournament)
+
+        # create a Competitor instance with the computed registration date
+        competitor = Competitor.objects.create(
+            tournament=tournament,
+            competitor=participant,
+        )
+        competitor.registration_date = registration_date
+        competitor.save()

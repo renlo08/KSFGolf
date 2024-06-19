@@ -1,4 +1,5 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from phonenumber_field import modelfields
 from django.db import models

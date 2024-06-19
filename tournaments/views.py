@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.models import UserProfile
@@ -98,3 +99,7 @@ def get_tournament_detail(request, pk, detail_page):
         else:
             return redirect('tournaments:detail', pk=tournament.pk, detail_page='overview')
     return render(request, 'tournaments/details.html', context)
+
+
+def generate_flights(request, pk):
+    return HttpResponse('This is the temp flight')

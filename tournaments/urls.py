@@ -11,4 +11,5 @@ urlpatterns = [
     path('delete/', views.delete_tournaments, name='delete'),
     path('<int:pk>/<str:detail_page>', views.get_tournament_detail, name='detail'),
     path('<int:pk>/edit/', views.edit_tournament, name='edit'),
+    path('<int:pk>/prepare/', views.generate_flights, name='export-flights'),
 ]

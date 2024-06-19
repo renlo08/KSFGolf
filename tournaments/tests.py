@@ -1,5 +1,6 @@
+from decimal import Decimal
 from http import HTTPStatus
-from unittest.mock import patch
+from random import uniform, choice, sample
 
 import pytest
 from django.contrib.auth import get_user
@@ -7,6 +8,8 @@ from django.test import RequestFactory, TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import slugify
+from faker import Faker
 
 from accounts.models import UserProfile
 from tournaments.models import Tournament, GolfCourse
@@ -339,6 +342,7 @@ class TestEditTournament(ViewsTestCase):
         )
         slugify_instance_str(self.tournament, save=True)
 
+    @pytest.mark.django_db
     def test_edit_tournament(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
@@ -353,6 +357,7 @@ class TestEditTournament(ViewsTestCase):
         assert 'message' in response.context
         assert 'Tournament updated successfully' == response.context['message']
 
+    @pytest.mark.django_db
     def test_edit_tournament_relevant_slug_field(self):
         another_course = GolfCourse.objects.create(
             name="Another Dummy Golf Country Club",
@@ -428,6 +433,7 @@ class TestDeleteTournament(ViewsTestCase):
         self.tournament3 = Tournament.objects.create(hcp_limit=14.0, **common_data)
         self.tournament4 = Tournament.objects.create(hcp_limit=15.0, **common_data)
 
+    @pytest.mark.django_db
     def test_delete_with_unique_tournament_selected(self):
         response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
@@ -439,6 +445,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament3.id).exists()
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
+    @pytest.mark.django_db
     def test_delete_multiple_tournament_selected(self):
         response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id, self.tournament2.id]})
@@ -450,6 +457,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament3.id).exists()
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
+    @pytest.mark.django_db
     def test_delete_without_tournament_selected(self):
         response = self.client.post(reverse('tournaments:delete'),
                                     data={})
@@ -515,6 +523,7 @@ class TestTournamentDetail(ViewsTestCase):
         )
         slugify_instance_str(self.tournament, save=True)
 
+    @pytest.mark.django_db
     def test_show_tournament_overview(self):
         response = self.client.get(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'overview'}))
         assert response.status_code == HTTPStatus.OK
@@ -530,6 +539,7 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/tournaments/1/overview'
 
+    @pytest.mark.django_db
     def test_show_registered_participants(self):
         response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
         assert response.context.get('detail_template') == 'tournaments/partials/participants.html'
@@ -560,6 +570,7 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/tournaments/1/participants'
 
+    @pytest.mark.django_db
     def test_register_to_tournament(self):
         assert self.tournament.participants.count() == 0
         response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
@@ -574,6 +585,7 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/accounts/1/participate/'
 
+    @pytest.mark.django_db
     def test_revoke_tournament_participation(self):
         # prepare the test and add the user to the tournament
         self.tournament.participants.clear()
@@ -596,3 +608,83 @@ class TestTournamentDetail(ViewsTestCase):
         response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/accounts/1/participate/'
+
+
+class TestTournamentSetup(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        fake = Faker('de_DE')  # German local
+
+        # create 100 UserProfile
+        # Generate 100 User instances and UserProfile instances
+        for i in range(100):
+            username = fake.user_name() + str(i)
+            user = User.objects.create_user(username=username,
+                                            email=fake.email(),
+                                            password=fake.password(length=10,
+                                                                   special_chars=True,
+                                                                   digits=True,
+                                                                   upper_case=True,
+                                                                   lower_case=True))
+            # Create a fake UserProfile
+            UserProfile.objects.create(
+                user=user,
+                first_name=fake.first_name(),
+                family_name=fake.last_name(),
+                phone_number=fake.phone_number(),
+                hcp=Decimal("%.1f" % uniform(0.0, 54.0)),
+                department=fake.company()
+            )
+
+            # create a golf course
+            GolfCourse.objects.create(
+                name=fake.word() + fake.word() + ' golf.e.V',
+                contact_person=fake.name(),
+                telephone=fake.phone_number(),
+                email=fake.email(),
+                address=fake.street_address(),
+                zip_code=fake.random_int(min=10000, max=99999),
+                city=fake.city(),
+                country='DE'
+            )
+
+            # Create a tournament
+            all_user_profiles = UserProfile.objects.all()
+            Tournament.objects.create(
+                slug=slugify(f"tournament-1"),
+                date=fake.date_time_this_year(before_now=True, after_now=True, tzinfo=None),
+                tee_time=fake.time_object(),
+                course=GolfCourse.objects.first(),
+                supervisor=choice(all_user_profiles),
+                hcp_limit=Decimal("%.1f" % uniform(0.0, 54.0)),
+                hcp_relevant=fake.boolean(),
+                comment=fake.text())
+
+    def setUp(self):
+        # add a multiple of 3 of number of participants (30 participants)
+        all_participants = UserProfile.objects.all()
+        participants = sample(list(all_participants), 30)
+        self.tournament = Tournament.objects.first()
+        for participant in participants:
+            self.tournament.participants.add(participant)
+        self.tournament.save()
+
+    def tearDown(self):
+        # Remove the participants from the tournament
+        tournament = Tournament.objects.first()
+        tournament.participants.clear()
+
+
+class TestTournamentPreparation(TestTournamentSetup):
+
+    @pytest.mark.django_db
+    def test_generate_flights_only_with_3er_flghts(self):
+        self.fail()
+
+    @pytest.mark.django_db
+    def test_generate_flights_only_2er_and_3er_flghts(self):
+        self.fail()
+
+    @pytest.mark.django_db
+    def test_generate_flights_only_3er_flghts(self):
+        self.fail()

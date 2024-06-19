@@ -2,10 +2,21 @@
     <section>
 
         <p>last update:{{ object.elapsed_time }}</p>
+        <form method="POST" action="{% url 'accounts:participate' object.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="link-button" id="usr-status">
+                {% if is_registered %}
+                    <!-- The user is already register to the tournament -->
+                    Cancel my participation to this tournament.
+                {% else %}
+                    <!-- The user is not already register to the tournament -->
+                    Register to this tournament.
+                {% endif %}
+            </button>
+        </form>
         <form id="edit-form" method="get" action="{{ object.get_edit_url }}">
             {% csrf_token %}
-            
-        <h1>Informations</h1><span><button type="submit">Edit</button></span>
+            <h1>Informations</h1><span><button type="submit">Edit</button></span>
         </form>
         <table>
             <tr>

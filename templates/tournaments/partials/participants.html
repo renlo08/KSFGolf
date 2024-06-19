@@ -1,7 +1,10 @@
 {% block detail-content %}
     <section>
-
-        <p>last update:{{ object.elapsed_time }}</p>
+        <input value="Export flights" type="button"
+               onclick="window.location.href='{% url 'tournaments:export-flights' pk=object.pk %}'">
+    </section>
+    <section>
+        <p>last update: {{ object.elapsed_time }}</p>
         <h1>Participants</h1>
         <h2>{{ course.name }} ({{ object.date }})</h2>
         <table>

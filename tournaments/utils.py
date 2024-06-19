@@ -27,15 +27,15 @@ def stringify_time_delta(date: datetime.date) -> str:
     time_difference = current_time - date
 
     if time_difference < datetime.timedelta(minutes=1):
-        return f"less than 1 minute ago."
+        return f"less than 1 minute ago"
     elif time_difference < datetime.timedelta(hours=1):
         minutes = int(time_difference.total_seconds() / 60)
-        return f"{minutes} minutes ago."
+        return f"{minutes} minutes ago"
     elif time_difference < datetime.timedelta(days=1):
         hours = int(time_difference.total_seconds() // 3600)
-        return f"{hours} hours ago."
+        return f"{hours} hours ago"
     elif time_difference < datetime.timedelta(days=5):
         days = int(time_difference.total_seconds() // (3600 * 24))
-        return f"{days} day{'s' if days > 1 else ''} ago."
+        return f"{days} day{'s' if days > 1 else ''} ago"
     else:
-        return f"on {date.strftime('%d.%m.%Y')}."
+        return f"{date.strftime('%d.%m.%Y')}"

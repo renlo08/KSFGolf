@@ -3,7 +3,6 @@ from datetime import timedelta
 
 import django
 
-
 import logging
 
 from decimal import Decimal
@@ -61,7 +60,6 @@ UserProfile.objects.create(
     first_name='Laurent',
     family_name='Bihin',
     phone_number=fake.phone_number(),
-    hcp=11.9,
     department=fake.company()
 )
 
@@ -94,7 +92,6 @@ for i in range(NR_INSTANCE):
         first_name=fake.first_name(),
         family_name=fake.last_name(),
         phone_number=fake.phone_number(),
-        hcp=Decimal("%.1f" % uniform(0.0, 54.0)),
         department=fake.company()
     )
 
@@ -130,7 +127,6 @@ for num in range(50):
         hcp_relevant=fake.boolean(),
         comment=fake.text())
 
-
     # assume `tournament` is the current tournament instance
     participants_count = randint(0, 30)
     participants_count = min(participants_count, len(all_user_profiles))
@@ -147,6 +143,7 @@ for num in range(50):
         competitor = Competitor.objects.create(
             tournament=tournament,
             competitor=participant,
+            hcp=Decimal("%.1f" % uniform(0.0, 54.0))
         )
         competitor.registration_date = registration_date
         competitor.save()

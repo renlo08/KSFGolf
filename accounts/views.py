@@ -1,12 +1,13 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import redirect, render, get_object_or_404
+from django.utils import timezone
 
 from accounts.forms import UserRegistrationForm
 from accounts.models import UserProfile
 from app import settings
-from tournaments.models import Tournament
+from tournaments.models import Tournament, Competitor
 
 
 def login_view(request):
@@ -44,13 +45,20 @@ def logout_view(request):
 @login_required
 def tournament_registration_view(request, pk: int):
     tournament = get_object_or_404(Tournament, pk=pk)
+    user_profile = UserProfile.objects.get(user=request.user)
+
     if request.method == 'POST':
         # identify the participation of the user to the tournament
-        user = UserProfile.objects.get(user=request.user)
-        if user in tournament.participants.all():
+        competitor_instance = Competitor.objects.filter(tournament=tournament, user_profile=user_profile).first()
+        if competitor_instance:
             # remove the user from the participant
-            tournament.participants.remove(user)
+            competitor_instance.delete()
         else:
             # add the user to the participant
-            tournament.participants.add(user)
+            Competitor.objects.create(
+                tournament=tournament,
+                user_profile=user_profile,
+                registration_date=timezone.now().date(),
+                hcp=54.0  # TODO: create new registration form
+            )
     return redirect('tournaments:detail', pk=tournament.pk, detail_page='overview')

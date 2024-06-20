@@ -20,8 +20,9 @@ class TournamentAdmin(admin.ModelAdmin):
 
 
 class CompetitorsAdmin(admin.ModelAdmin):
-    list_display = ('tournament', 'competitor', 'registration_date')
-    readonly_fields = ('tournament', 'competitor', 'registration_date')
+    list_display = ('tournament', 'user_profile', 'registration_date')
+    readonly_fields = ('tournament', 'user_profile', 'registration_date')
+    search_fields = ('tournament', 'user_profile')
 
 
 admin.site.register(Tournament, TournamentAdmin)

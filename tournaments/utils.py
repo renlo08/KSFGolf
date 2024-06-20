@@ -39,3 +39,22 @@ def stringify_time_delta(date: datetime.date) -> str:
         return f"{days} day{'s' if days > 1 else ''} ago"
     else:
         return f"{date.strftime('%d.%m.%Y')}"
+
+
+def form_groups_of_competitors(competitors):
+    # convert QuerySet to list if competitors is QuerySet
+    competitors = list(competitors)
+
+    groups = []
+    remainder = len(competitors) % 3
+
+    # If the competitors are not a multiple of 3, create a group of 2 first
+    if remainder != 0:
+        groups.append(competitors[:2])
+        competitors = competitors[2:]  # remaining competitors
+
+    # Divide the rest of the competitors into groups of 3
+    for i in range(0, len(competitors), 3):
+        groups.append(competitors[i:i + 3])
+
+    return groups

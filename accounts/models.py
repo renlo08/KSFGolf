@@ -17,8 +17,6 @@ class UserProfile(models.Model):
     family_name = models.CharField(max_length=100)
     department = models.CharField(max_length=20)
     phone_number = modelfields.PhoneNumberField()
-    hcp = models.DecimalField(max_digits=3, decimal_places=1, null=False,
-                              validators=[MinValueValidator(0.0), MaxValueValidator(54.0)])
 
     def __str__(self):
         return f'{self.first_name} {self.family_name}'

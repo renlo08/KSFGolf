@@ -2,12 +2,13 @@ from datetime import datetime
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.models import UserProfile
+from tournaments import utils
 from tournaments.forms import TournamentForm, GolfCourseForm
-from tournaments.models import Tournament
+from tournaments.models import Tournament, Competitor
 from tournaments.utils import slugify_instance_str
 
 
@@ -94,12 +95,24 @@ def get_tournament_detail(request, pk, detail_page):
     if detail_page == 'participants':
         # only if is staff user
         if request.user.is_staff:
-            participants = tournament.participants.order_by('hcp')
-            context['participants'] = participants
+            # now retrieve and order Competitor models
+            competitors = tournament.competitor_set.order_by('registration_date')
+            context['competitors'] = competitors
         else:
             return redirect('tournaments:detail', pk=tournament.pk, detail_page='overview')
     return render(request, 'tournaments/details.html', context)
 
 
-def generate_flights(request, pk):
-    return HttpResponse('This is the temp flight')
+def fetch_flights(request):
+    tournament_pk = request.GET.get('tpk')
+    competitors = Competitor.objects.filter(tournament__id=tournament_pk).order_by('hcp')
+    flights = utils.form_groups_of_competitors(competitors)
+    context = {'flights': flights}
+    return render(request, 'tournaments/partials/flights.html', context=context)
+
+
+def fetch_competitors(request):
+    tournament_pk = request.GET.get('tpk')
+    competitors = Competitor.objects.filter(tournament__id=tournament_pk).order_by('registration_date')
+    context = {'competitors': competitors}
+    return render(request, 'tournaments/partials/competitors.html', context=context)

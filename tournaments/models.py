@@ -76,6 +76,10 @@ class Tournament(models.Model):
 
 class Competitor(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
-    competitor = models.ForeignKey('accounts.UserProfile', on_delete=models.CASCADE)
+    user_profile = models.ForeignKey('accounts.UserProfile', on_delete=models.CASCADE)
     registration_date = models.DateField(auto_now_add=True)
+    hcp = models.DecimalField(max_digits=3, decimal_places=1, null=False,
+                              validators=[MinValueValidator(0.0), MaxValueValidator(54.0)])
 
+    def __str__(self):
+        return f"{self.user_profile}({self.hcp}): {self.registration_date}"

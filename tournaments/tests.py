@@ -12,7 +12,7 @@ from django.utils.text import slugify
 from faker import Faker
 
 from accounts.models import UserProfile
-from tournaments.models import Tournament, GolfCourse
+from tournaments.models import Tournament, GolfCourse, Competitor
 import datetime
 
 from tournaments.utils import slugify_instance_str
@@ -26,7 +26,7 @@ class ViewsTestCase(TestCase):
         self.superuser.is_staff = True
         self.superuser.save()
         self.superuser_profile = UserProfile.objects.create(
-            user=self.superuser, first_name='Super', family_name='User', phone_number='+4915150505050', hcp=11.9)
+            user=self.superuser, first_name='Super', family_name='User', phone_number='+4915150505050')
 
 
 class TestListTournament(ViewsTestCase):
@@ -547,13 +547,14 @@ class TestTournamentDetail(ViewsTestCase):
         assert context_object.get('object') == self.tournament
         assert context_object.get('course') == self.golf_course
         assert not context_object.get('is_registered')
-        assert self.superuser_profile not in context_object.get('participants').all()
+        assert self.superuser_profile not in context_object.get('competitors').all()
 
         # click to register the participation
         response = self.client.post(reverse('accounts:participate', args=[self.tournament.id]))
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/tournaments/1/overview'
-        assert self.superuser_profile in context_object.get('participants').all()
+        # Make sure that a competitor exist.
+        assert Competitor.objects.get(tournament=self.tournament, user_profile=self.superuser_profile)
 
     def test_show_tournament_participants_fail_staff_permission_required(self):
         # Revoke staff permission from superuser
@@ -589,7 +590,12 @@ class TestTournamentDetail(ViewsTestCase):
     def test_revoke_tournament_participation(self):
         # prepare the test and add the user to the tournament
         self.tournament.participants.clear()
-        self.tournament.participants.add(self.superuser_profile)
+        competitor = Competitor.objects.create(
+            tournament=self.tournament,
+            user_profile=self.superuser_profile,
+            hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+        )
+        self.tournament.participants.add(competitor.user_profile)
         assert self.tournament.participants.count() == 1
 
         # simulate the revokation
@@ -600,7 +606,12 @@ class TestTournamentDetail(ViewsTestCase):
     def test_revoke_tournament_participation_fail_login_required(self):
         # prepare the test and add the user to the tournament
         self.tournament.participants.clear()
-        self.tournament.participants.add(self.superuser_profile)
+        competitor = Competitor.objects.create(
+            tournament=self.tournament,
+            user_profile=self.superuser_profile,
+            hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+        )
+        self.tournament.participants.add(competitor.user_profile)
         assert self.tournament.participants.count() == 1
         self.client.logout()
 
@@ -632,7 +643,6 @@ class TestTournamentSetup(TestCase):
                 first_name=fake.first_name(),
                 family_name=fake.last_name(),
                 phone_number=fake.phone_number(),
-                hcp=Decimal("%.1f" % uniform(0.0, 54.0)),
                 department=fake.company()
             )
 
@@ -651,7 +661,6 @@ class TestTournamentSetup(TestCase):
             # Create a tournament
             all_user_profiles = UserProfile.objects.all()
             Tournament.objects.create(
-                slug=slugify(f"tournament-1"),
                 date=fake.date_time_this_year(before_now=True, after_now=True, tzinfo=None),
                 tee_time=fake.time_object(),
                 course=GolfCourse.objects.first(),
@@ -666,7 +675,11 @@ class TestTournamentSetup(TestCase):
         participants = sample(list(all_participants), 30)
         self.tournament = Tournament.objects.first()
         for participant in participants:
-            self.tournament.participants.add(participant)
+            Competitor.objects.create(
+                tournament=self.tournament,
+                user_profile=participant,
+                hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+            )
         self.tournament.save()
 
     def tearDown(self):
@@ -678,13 +691,13 @@ class TestTournamentSetup(TestCase):
 class TestTournamentPreparation(TestTournamentSetup):
 
     @pytest.mark.django_db
-    def test_generate_flights_only_with_3er_flghts(self):
-        self.fail()
+    def test_generate_flight_by_handicap(self):
+        response = self.client.get(reverse('tournaments:fetch_flights'), {'tpk': self.tournament.pk})
+        flights = response.context.get('flights')
 
-    @pytest.mark.django_db
-    def test_generate_flights_only_2er_and_3er_flghts(self):
-        self.fail()
+        assert flights is not None, "No flights found in response context"
 
-    @pytest.mark.django_db
-    def test_generate_flights_only_3er_flghts(self):
-        self.fail()
+        for flight in flights:
+            hcp_values = [competitor.hcp for competitor in flight]
+            # Check if 'hcp' values are  in ascending order
+            assert hcp_values == sorted(hcp_values), "Competitors in a flight are not ordered by 'hcp'"

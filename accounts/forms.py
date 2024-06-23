@@ -25,7 +25,6 @@ class UserRegistrationForm(UserCreationForm):
             first_name=self.cleaned_data['first_name'],
             family_name=self.cleaned_data['family_name'],
             phone_number=self.cleaned_data['phone_number'],
-            hcp=self.cleaned_data['hcp'],
         )
         return user
 

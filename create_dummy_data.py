@@ -142,7 +142,7 @@ for num in range(50):
         # create a Competitor instance with the computed registration date
         competitor = Competitor.objects.create(
             tournament=tournament,
-            competitor=participant,
+            user_profile=participant,
             hcp=Decimal("%.1f" % uniform(0.0, 54.0))
         )
         competitor.registration_date = registration_date

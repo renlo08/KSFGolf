@@ -1,5 +1,7 @@
 import datetime
+from decimal import Decimal
 from http import HTTPStatus
+from random import uniform
 
 import pytest
 from django.contrib.auth import get_user
@@ -12,7 +14,7 @@ from django.urls import reverse
 from accounts.models import UserProfile
 from accounts.views import login_view, register_view
 from app import settings
-from tournaments.models import Tournament
+from tournaments.models import Tournament, Competitor
 
 
 class TestAccountManagement(TestCase):
@@ -121,7 +123,7 @@ class TestAccountManagement(TestCase):
         # Create user, user profile and tournament objects
         user = User.objects.create_user(username='john', password='test-password')
         user_profile = UserProfile.objects.create(user=user, first_name='John', family_name='Doe',
-                                                  phone_number='1234567890', hcp=10.0)
+                                                  phone_number='1234567890')
         tournament = Tournament.objects.create(date=datetime.datetime.now(),
                                                tee_time=datetime.time(10, 30),
                                                hcp_limit=34.0)
@@ -138,7 +140,12 @@ class TestAccountManagement(TestCase):
         response = register_view(request)
 
         # Register the user to the tournament
-        tournament.participants.add(user_profile)
+        competitor = Competitor.objects.create(
+            tournament=tournament,
+            user_profile=user_profile,
+            hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+        )
+        tournament.participants.add(competitor.user_profile)
 
         # Check if the user profile is registered to the tournament
         assert user_profile.is_registered(tournament.pk)

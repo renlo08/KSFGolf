@@ -1,21 +1,33 @@
 {% block detail-content %}
     <section>
-        <button hx-get="{% url 'tournaments:fetch_flights' %}?tpk={{ object.pk }}" 
-                hx-swap="innerHTML" 
-                hx-target="#ParticipantContent" 
-                hx-trigger="click">Show flights</button>
-        <button hx-get="{% url 'tournaments:fetch_competitors' %}?tpk={{ object.pk }}" 
-                hx-swap="innerHTML" 
-                hx-target="#ParticipantContent" 
-                hx-trigger="click">Show registration list</button>
-    </section>
-    <section>
-        <p>last update: {{ object.elapsed_time }}</p>
+
         <h1>Participants</h1>
         <h2>{{ course.name }} ({{ object.date }})</h2>
-        <div id="ParticipantContent">
+        <p>last update: {{ object.elapsed_time }}</p>
+    </section>
+    <section>
+        <div>
             {% include 'tournaments/partials/competitors.html' %}
         </div>
-
     </section>
+    <br>
+    <section>
+        <form hx-get="{% url 'tournaments:fetch_flights' %}"
+              hx-swap="innerHTML"
+              hx-target="#FlightComposition"
+              hx-trigger="change, load" 
+              id="FlightStartForm">
+
+            <label for="FlightStrat">Composition strategy:</label>
+            <select name="FlightStrat" id="FlightStrat">
+                <option value="SortByHcp" selected>By handicap</option>
+                <option value="HighMediumLow">High-Medium-Low</option>
+            </select>
+            <input type="hidden" name="tpk" value="{{ object.pk }}">
+        </form>
+        <div id="FlightComposition">
+            {% include 'tournaments/partials/flights.html' %}
+        </div>
+    </section>
+
 {% endblock %}

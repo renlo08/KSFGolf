@@ -2,7 +2,6 @@ from datetime import datetime
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.models import UserProfile
@@ -105,8 +104,13 @@ def get_tournament_detail(request, pk, detail_page):
 
 def fetch_flights(request):
     tournament_pk = request.GET.get('tpk')
-    competitors = Competitor.objects.filter(tournament__id=tournament_pk).order_by('hcp')
-    flights = utils.form_groups_of_competitors(competitors)
+    flight_composition = request.GET.get('FlightStrat')
+    competitors = Competitor.objects.filter(tournament__id=tournament_pk)
+    flights = {}
+    if flight_composition == 'SortByHcp':
+        flights = utils.order_flights_by_handicap(competitors)
+    if flight_composition == 'HighMediumLow':
+        flights = utils.form_basic_high_mid_low_flights(competitors)
     context = {'flights': flights}
     return render(request, 'tournaments/partials/flights.html', context=context)
 

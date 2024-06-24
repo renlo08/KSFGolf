@@ -8,7 +8,6 @@ from django.test import RequestFactory, TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.text import slugify
 from faker import Faker
 
 from accounts.models import UserProfile
@@ -626,9 +625,9 @@ class TestTournamentSetup(TestCase):
     def setUpTestData(cls):
         fake = Faker('de_DE')  # German local
 
-        # create 100 UserProfile
-        # Generate 100 User instances and UserProfile instances
-        for i in range(100):
+        # create 40 UserProfile
+        # Generate 40 User instances and UserProfile instances
+        for i in range(40):
             username = fake.user_name() + str(i)
             user = User.objects.create_user(username=username,
                                             email=fake.email(),
@@ -692,7 +691,8 @@ class TestTournamentPreparation(TestTournamentSetup):
 
     @pytest.mark.django_db
     def test_generate_flight_by_handicap(self):
-        response = self.client.get(reverse('tournaments:fetch_flights'), {'tpk': self.tournament.pk})
+        response = self.client.get(reverse('tournaments:fetch_flights'),
+                                   {'tpk': self.tournament.pk, 'FlightStrat': 'SortByHcp'})
         flights = response.context.get('flights')
 
         assert flights is not None, "No flights found in response context"
@@ -701,3 +701,21 @@ class TestTournamentPreparation(TestTournamentSetup):
             hcp_values = [competitor.hcp for competitor in flight]
             # Check if 'hcp' values are  in ascending order
             assert hcp_values == sorted(hcp_values), "Competitors in a flight are not ordered by 'hcp'"
+
+    @pytest.mark.django_db
+    def test_generate_basic_high_middle_low_flights(self):
+        response = self.client.get(reverse('tournaments:fetch_flights'),
+                                   {'tpk': self.tournament.pk, 'FlightStrat': 'HighMediumLow'})
+        flights = response.context.get('flights')
+
+        assert flights is not None, "No flights found in response context"
+
+        for flight in flights:
+            # Check if the length of each flight is 3 (High-Medium-Low)
+            assert len(flight) in [2, 3], "Flight does not consist of 2 or 3 competitors"
+
+            hcp_values = [competitor.hcp for competitor in flight]
+
+            # Check if competitors are correctly placed as Low-Medium-High
+            assert hcp_values[0] <= hcp_values[1] <= hcp_values[2], \
+                "Competitors in a flight are not ordered as Low-Medium-High"

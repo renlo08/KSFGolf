@@ -5,8 +5,9 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.models import UserProfile
+from tournaments import utils
 from tournaments.forms import TournamentForm, GolfCourseForm
-from tournaments.models import Tournament
+from tournaments.models import Tournament, Competitor
 from tournaments.utils import slugify_instance_str
 
 
@@ -93,8 +94,29 @@ def get_tournament_detail(request, pk, detail_page):
     if detail_page == 'participants':
         # only if is staff user
         if request.user.is_staff:
-            participants = tournament.participants.order_by('hcp')
-            context['participants'] = participants
+            # now retrieve and order Competitor models
+            competitors = tournament.competitor_set.order_by('registration_date')
+            context['competitors'] = competitors
         else:
             return redirect('tournaments:detail', pk=tournament.pk, detail_page='overview')
     return render(request, 'tournaments/details.html', context)
+
+
+def fetch_flights(request):
+    tournament_pk = request.GET.get('tpk')
+    flight_composition = request.GET.get('FlightStrat')
+    competitors = Competitor.objects.filter(tournament__id=tournament_pk)
+    flights = {}
+    if flight_composition == 'SortByHcp':
+        flights = utils.order_flights_by_handicap(competitors)
+    if flight_composition == 'HighMediumLow':
+        flights = utils.form_basic_high_mid_low_flights(competitors)
+    context = {'flights': flights}
+    return render(request, 'tournaments/partials/flights.html', context=context)
+
+
+def fetch_competitors(request):
+    tournament_pk = request.GET.get('tpk')
+    competitors = Competitor.objects.filter(tournament__id=tournament_pk).order_by('registration_date')
+    context = {'competitors': competitors}
+    return render(request, 'tournaments/partials/competitors.html', context=context)

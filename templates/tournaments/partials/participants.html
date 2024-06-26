@@ -1,34 +1,33 @@
 {% block detail-content %}
     <section>
 
-        <p>last update:{{ object.elapsed_time }}</p>
         <h1>Participants</h1>
         <h2>{{ course.name }} ({{ object.date }})</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>First name</th>
-                <th>Family name</th>
-                <th>Department</th>
-                <th>HCP</th>
-                <th>Membership</th>
-                <th>Email</th>
-                <th>Phone</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for  participant in participants %}
-                <tr>
-                    <td>{{ participant.first_name }}</td>
-                    <td>{{ participant.family_name }}</td>
-                    <td>{{ participant.department }}</td>
-                    <td>{{ participant.hcp }}</td>
-                    <td>Membership not available</td>
-                    <td>{{ participant.user.email }}</td>
-                    <td>{{ participant.phone_number }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+        <p>last update: {{ object.elapsed_time }}</p>
     </section>
+    <section>
+        <div>
+            {% include 'tournaments/partials/competitors.html' %}
+        </div>
+    </section>
+    <br>
+    <section>
+        <form hx-get="{% url 'tournaments:fetch_flights' %}"
+              hx-swap="innerHTML"
+              hx-target="#FlightComposition"
+              hx-trigger="change, load" 
+              id="FlightStartForm">
+
+            <label for="FlightStrat">Composition strategy:</label>
+            <select name="FlightStrat" id="FlightStrat">
+                <option value="SortByHcp" selected>By handicap</option>
+                <option value="HighMediumLow">High-Medium-Low</option>
+            </select>
+            <input type="hidden" name="tpk" value="{{ object.pk }}">
+        </form>
+        <div id="FlightComposition">
+            {% include 'tournaments/partials/flights.html' %}
+        </div>
+    </section>
+
 {% endblock %}

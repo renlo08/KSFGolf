@@ -1,0 +1,36 @@
+<table>
+    <thead>
+    <tr>
+        <th>Flight Nr.</th>
+        <th>First name</th>
+        <th>Family name</th>
+        <th>Department</th>
+        <th>HCP</th>
+        <th>Membership</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for flight_competitors in flights %}
+        {% with flight_competitors|length as group_length %}
+            {% for competitor in flight_competitors %}
+                <tr>
+                    {% if forloop.first %}
+                        <td rowspan="{{ group_length }}">{{ forloop.parentloop.counter }}</td>
+                    {% endif %}
+                    <td>{{ competitor.user_profile.first_name }}</td>
+                    <td>{{ competitor.user_profile.family_name }}</td>
+                    <td>{{ competitor.user_profile.department }}</td>
+                    <td>{{ competitor.hcp }}</td>
+                    <td>Membership not available</td>
+                </tr>
+            {% endfor %}
+            <!-- Add a separator row after each flight but not after the last one. -->
+            {% if not forloop.last %}
+                <tr>
+                    <td style="padding: 10px" colspan="8"></td>
+                </tr>
+            {% endif %}
+        {% endwith %}
+    {% endfor %}
+    </tbody>
+</table>

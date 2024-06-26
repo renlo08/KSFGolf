@@ -1,7 +1,7 @@
 import os
+from datetime import timedelta
 
 import django
-
 
 import logging
 
@@ -16,7 +16,7 @@ from django.utils.text import slugify
 from faker import Faker
 
 from accounts.models import UserProfile
-from tournaments.models import Tournament, GolfCourse
+from tournaments.models import Tournament, GolfCourse, Competitor
 
 # creating a logging instance with the name 'MyLogger'
 logger = logging.getLogger('MyLogger')
@@ -60,7 +60,6 @@ UserProfile.objects.create(
     first_name='Laurent',
     family_name='Bihin',
     phone_number=fake.phone_number(),
-    hcp=11.9,
     department=fake.company()
 )
 
@@ -93,7 +92,6 @@ for i in range(NR_INSTANCE):
         first_name=fake.first_name(),
         family_name=fake.last_name(),
         phone_number=fake.phone_number(),
-        hcp=Decimal("%.1f" % uniform(0.0, 54.0)),
         department=fake.company()
     )
 
@@ -129,12 +127,23 @@ for num in range(50):
         hcp_relevant=fake.boolean(),
         comment=fake.text())
 
-
     # assume `tournament` is the current tournament instance
     participants_count = randint(0, 30)
     participants_count = min(participants_count, len(all_user_profiles))
     participants = sample(list(all_user_profiles), participants_count)
 
     for participant in participants:
-        tournament.participants.add(participant)
-    tournament.save()
+        # generate a random number of days to subtract from the tournament date
+        days_before_tournament = randint(1, 25)
+
+        # calculate the registration_date
+        registration_date = tournament.date - timedelta(days=days_before_tournament)
+
+        # create a Competitor instance with the computed registration date
+        competitor = Competitor.objects.create(
+            tournament=tournament,
+            user_profile=participant,
+            hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+        )
+        competitor.registration_date = registration_date
+        competitor.save()

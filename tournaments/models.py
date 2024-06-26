@@ -53,7 +53,7 @@ class Tournament(models.Model):
     max_participants = models.IntegerField(default=30)
     comment = models.TextField(blank=True)
     participants = models.ManyToManyField('accounts.UserProfile', blank=True,
-                                          related_name='tournament_participants')
+                                          related_name='competitors', through='Competitor')
 
     def count_participants(self):
         return self.participants.count()
@@ -72,3 +72,14 @@ class Tournament(models.Model):
 
     def elapsed_time(self):
         return utils.stringify_time_delta(self.updated_date)
+
+
+class Competitor(models.Model):
+    tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE)
+    user_profile = models.ForeignKey('accounts.UserProfile', on_delete=models.CASCADE)
+    registration_date = models.DateField(auto_now_add=True)
+    hcp = models.DecimalField(max_digits=3, decimal_places=1, null=False,
+                              validators=[MinValueValidator(0.0), MaxValueValidator(54.0)])
+
+    def __str__(self):
+        return f"{self.user_profile}({self.hcp}): {self.registration_date}"

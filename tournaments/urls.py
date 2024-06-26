@@ -1,5 +1,6 @@
 from django.urls import path
 
+from app import utils
 from tournaments import views
 
 app_name = 'tournaments'
@@ -12,3 +13,10 @@ urlpatterns = [
     path('<int:pk>/<str:detail_page>', views.get_tournament_detail, name='detail'),
     path('<int:pk>/edit/', views.edit_tournament, name='edit'),
 ]
+
+htmx_urlpatterns = [
+    path('fetch_flights/', views.fetch_flights, name='fetch_flights'),
+    path('fetch_competitors/', views.fetch_competitors, name='fetch_competitors'),
+]
+
+urlpatterns = utils.arrange_urlpatterns(urlpatterns + htmx_urlpatterns)

@@ -1,6 +1,7 @@
 Django==4.2
+django-htmx
+phonenumbers
 pytest
 pytest-django
 django-phonenumber-field
 faker
-phonenumbers

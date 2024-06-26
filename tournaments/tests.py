@@ -1,5 +1,6 @@
+from decimal import Decimal
 from http import HTTPStatus
-from unittest.mock import patch
+from random import uniform, choice, sample
 
 import pytest
 from django.contrib.auth import get_user
@@ -7,9 +8,10 @@ from django.test import RequestFactory, TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+from faker import Faker
 
 from accounts.models import UserProfile
-from tournaments.models import Tournament, GolfCourse
+from tournaments.models import Tournament, GolfCourse, Competitor
 import datetime
 
 from tournaments.utils import slugify_instance_str
@@ -23,7 +25,7 @@ class ViewsTestCase(TestCase):
         self.superuser.is_staff = True
         self.superuser.save()
         self.superuser_profile = UserProfile.objects.create(
-            user=self.superuser, first_name='Super', family_name='User', phone_number='+4915150505050', hcp=11.9)
+            user=self.superuser, first_name='Super', family_name='User', phone_number='+4915150505050')
 
 
 class TestListTournament(ViewsTestCase):
@@ -339,6 +341,7 @@ class TestEditTournament(ViewsTestCase):
         )
         slugify_instance_str(self.tournament, save=True)
 
+    @pytest.mark.django_db
     def test_edit_tournament(self):
         self.client.login(username='sup-usr', password='test-superuser')
         current_year = datetime.datetime.now().year
@@ -353,6 +356,7 @@ class TestEditTournament(ViewsTestCase):
         assert 'message' in response.context
         assert 'Tournament updated successfully' == response.context['message']
 
+    @pytest.mark.django_db
     def test_edit_tournament_relevant_slug_field(self):
         another_course = GolfCourse.objects.create(
             name="Another Dummy Golf Country Club",
@@ -428,6 +432,7 @@ class TestDeleteTournament(ViewsTestCase):
         self.tournament3 = Tournament.objects.create(hcp_limit=14.0, **common_data)
         self.tournament4 = Tournament.objects.create(hcp_limit=15.0, **common_data)
 
+    @pytest.mark.django_db
     def test_delete_with_unique_tournament_selected(self):
         response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id]})
@@ -439,6 +444,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament3.id).exists()
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
+    @pytest.mark.django_db
     def test_delete_multiple_tournament_selected(self):
         response = self.client.post(reverse('tournaments:delete'),
                                     data={'delete-checkboxes': [self.tournament1.id, self.tournament2.id]})
@@ -450,6 +456,7 @@ class TestDeleteTournament(ViewsTestCase):
         assert Tournament.objects.filter(id=self.tournament3.id).exists()
         assert Tournament.objects.filter(id=self.tournament4.id).exists()
 
+    @pytest.mark.django_db
     def test_delete_without_tournament_selected(self):
         response = self.client.post(reverse('tournaments:delete'),
                                     data={})
@@ -515,6 +522,7 @@ class TestTournamentDetail(ViewsTestCase):
         )
         slugify_instance_str(self.tournament, save=True)
 
+    @pytest.mark.django_db
     def test_show_tournament_overview(self):
         response = self.client.get(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'overview'}))
         assert response.status_code == HTTPStatus.OK
@@ -530,6 +538,7 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/tournaments/1/overview'
 
+    @pytest.mark.django_db
     def test_show_registered_participants(self):
         response = self.client.post(reverse('tournaments:detail', kwargs={'pk': self.tournament.id, 'detail_page': 'participants'}))
         assert response.context.get('detail_template') == 'tournaments/partials/participants.html'
@@ -537,13 +546,14 @@ class TestTournamentDetail(ViewsTestCase):
         assert context_object.get('object') == self.tournament
         assert context_object.get('course') == self.golf_course
         assert not context_object.get('is_registered')
-        assert self.superuser_profile not in context_object.get('participants').all()
+        assert self.superuser_profile not in context_object.get('competitors').all()
 
         # click to register the participation
         response = self.client.post(reverse('accounts:participate', args=[self.tournament.id]))
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/tournaments/1/overview'
-        assert self.superuser_profile in context_object.get('participants').all()
+        # Make sure that a competitor exist.
+        assert Competitor.objects.get(tournament=self.tournament, user_profile=self.superuser_profile)
 
     def test_show_tournament_participants_fail_staff_permission_required(self):
         # Revoke staff permission from superuser
@@ -560,6 +570,7 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/tournaments/1/participants'
 
+    @pytest.mark.django_db
     def test_register_to_tournament(self):
         assert self.tournament.participants.count() == 0
         response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
@@ -574,10 +585,16 @@ class TestTournamentDetail(ViewsTestCase):
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/accounts/1/participate/'
 
+    @pytest.mark.django_db
     def test_revoke_tournament_participation(self):
         # prepare the test and add the user to the tournament
         self.tournament.participants.clear()
-        self.tournament.participants.add(self.superuser_profile)
+        competitor = Competitor.objects.create(
+            tournament=self.tournament,
+            user_profile=self.superuser_profile,
+            hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+        )
+        self.tournament.participants.add(competitor.user_profile)
         assert self.tournament.participants.count() == 1
 
         # simulate the revokation
@@ -588,7 +605,12 @@ class TestTournamentDetail(ViewsTestCase):
     def test_revoke_tournament_participation_fail_login_required(self):
         # prepare the test and add the user to the tournament
         self.tournament.participants.clear()
-        self.tournament.participants.add(self.superuser_profile)
+        competitor = Competitor.objects.create(
+            tournament=self.tournament,
+            user_profile=self.superuser_profile,
+            hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+        )
+        self.tournament.participants.add(competitor.user_profile)
         assert self.tournament.participants.count() == 1
         self.client.logout()
 
@@ -596,3 +618,104 @@ class TestTournamentDetail(ViewsTestCase):
         response = self.client.post(reverse('accounts:participate', kwargs={'pk': self.tournament.pk}))
         assert response.status_code == HTTPStatus.FOUND
         assert response.url == '/accounts/login/?next=/accounts/1/participate/'
+
+
+class TestTournamentSetup(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        fake = Faker('de_DE')  # German local
+
+        # create 40 UserProfile
+        # Generate 40 User instances and UserProfile instances
+        for i in range(40):
+            username = fake.user_name() + str(i)
+            user = User.objects.create_user(username=username,
+                                            email=fake.email(),
+                                            password=fake.password(length=10,
+                                                                   special_chars=True,
+                                                                   digits=True,
+                                                                   upper_case=True,
+                                                                   lower_case=True))
+            # Create a fake UserProfile
+            UserProfile.objects.create(
+                user=user,
+                first_name=fake.first_name(),
+                family_name=fake.last_name(),
+                phone_number=fake.phone_number(),
+                department=fake.company()
+            )
+
+            # create a golf course
+            GolfCourse.objects.create(
+                name=fake.word() + fake.word() + ' golf.e.V',
+                contact_person=fake.name(),
+                telephone=fake.phone_number(),
+                email=fake.email(),
+                address=fake.street_address(),
+                zip_code=fake.random_int(min=10000, max=99999),
+                city=fake.city(),
+                country='DE'
+            )
+
+            # Create a tournament
+            all_user_profiles = UserProfile.objects.all()
+            Tournament.objects.create(
+                date=fake.date_time_this_year(before_now=True, after_now=True, tzinfo=None),
+                tee_time=fake.time_object(),
+                course=GolfCourse.objects.first(),
+                supervisor=choice(all_user_profiles),
+                hcp_limit=Decimal("%.1f" % uniform(0.0, 54.0)),
+                hcp_relevant=fake.boolean(),
+                comment=fake.text())
+
+    def setUp(self):
+        # add a multiple of 3 of number of participants (30 participants)
+        all_participants = UserProfile.objects.all()
+        participants = sample(list(all_participants), 30)
+        self.tournament = Tournament.objects.first()
+        for participant in participants:
+            Competitor.objects.create(
+                tournament=self.tournament,
+                user_profile=participant,
+                hcp=Decimal("%.1f" % uniform(0.0, 54.0))
+            )
+        self.tournament.save()
+
+    def tearDown(self):
+        # Remove the participants from the tournament
+        tournament = Tournament.objects.first()
+        tournament.participants.clear()
+
+
+class TestTournamentPreparation(TestTournamentSetup):
+
+    @pytest.mark.django_db
+    def test_generate_flight_by_handicap(self):
+        response = self.client.get(reverse('tournaments:fetch_flights'),
+                                   {'tpk': self.tournament.pk, 'FlightStrat': 'SortByHcp'})
+        flights = response.context.get('flights')
+
+        assert flights is not None, "No flights found in response context"
+
+        for flight in flights:
+            hcp_values = [competitor.hcp for competitor in flight]
+            # Check if 'hcp' values are  in ascending order
+            assert hcp_values == sorted(hcp_values), "Competitors in a flight are not ordered by 'hcp'"
+
+    @pytest.mark.django_db
+    def test_generate_basic_high_middle_low_flights(self):
+        response = self.client.get(reverse('tournaments:fetch_flights'),
+                                   {'tpk': self.tournament.pk, 'FlightStrat': 'HighMediumLow'})
+        flights = response.context.get('flights')
+
+        assert flights is not None, "No flights found in response context"
+
+        for flight in flights:
+            # Check if the length of each flight is 3 (High-Medium-Low)
+            assert len(flight) in [2, 3], "Flight does not consist of 2 or 3 competitors"
+
+            hcp_values = [competitor.hcp for competitor in flight]
+
+            # Check if competitors are correctly placed as Low-Medium-High
+            assert hcp_values[0] <= hcp_values[1] <= hcp_values[2], \
+                "Competitors in a flight are not ordered as Low-Medium-High"
